@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF1E8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121C16" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kitchen">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1E8; --paper:#F8FAF4; --ink:#1F3326; --muted:#66756A; --line:#CDD6C6;
+  --accent:#D99A1E; --have:#3F7D50; --low:#C98A12; --out:#A8473B; --on-accent:#1F3326;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121C16; --paper:#1A261F; --ink:#E4ECDF; --muted:#93A396; --line:#2E3D33;
+    --accent:#E8B33C; --have:#6DB37F; --low:#E8B33C; --out:#E07A6C; --on-accent:#121C16;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121C16; --paper:#1A261F; --ink:#E4ECDF; --muted:#93A396; --line:#2E3D33;
+  --accent:#E8B33C; --have:#6DB37F; --low:#E8B33C; --out:#E07A6C; --on-accent:#121C16;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:17px; line-height:1.4; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; overscroll-behavior-y:none;
+}
+button,input,select{font:inherit; color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+main{max-width:640px; margin:0 auto; padding:1.5rem 1.1rem calc(6rem + env(safe-area-inset-bottom,0px))}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin-bottom:1.25rem}
+h1{font-size:clamp(2.6rem,11vw,3.6rem); font-weight:800; letter-spacing:-.03em; line-height:.9; margin:0}
+#sync{font-size:.8rem; color:var(--muted); text-align:right}
+.view[hidden]{display:none}
+
+/* add bar */
+.add{display:flex; gap:.5rem; margin-bottom:.9rem}
+.add input{-webkit-user-select:text; user-select:text; flex:1; min-width:0; background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:.65rem .8rem}
+.add select{background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:.6rem .4rem}
+.btn{background:var(--ink); color:var(--bg); border:0; border-radius:12px; padding:.65rem 1rem; font-weight:600}
+.btn.ghost{background:var(--paper); color:var(--ink); border:1.5px solid var(--line)}
+.btn.accent{background:var(--accent); color:var(--on-accent)}
+.chips{display:flex; gap:.4rem; overflow-x:auto; margin-bottom:1.25rem; padding-bottom:.2rem}
+.chips button{flex:none; background:var(--paper); border:1.5px solid var(--line); border-radius:999px; padding:.35rem .85rem; font-size:.92rem}
+.chips button[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.chips .edit{margin-left:auto}
+
+h2{font-size:1.15rem; font-weight:600; margin:1.5rem 0 .25rem; padding-bottom:.35rem; border-bottom:2px solid var(--ink); display:flex; justify-content:space-between; align-items:baseline}
+h2 small{font-weight:400; font-size:.85rem; color:var(--muted)}
+ul{list-style:none; margin:0; padding:0}
+.row{display:flex; align-items:center; gap:.6rem; border-bottom:1px solid var(--line); min-height:52px}
+.row .name{flex:1; padding:.55rem 0}
+.row .loc{font-size:.78rem; color:var(--muted); display:block}
+.status{
+  flex:none; width:5.4rem; border-radius:999px; border:1.5px solid currentColor;
+  background:none; padding:.3rem 0; font-size:.88rem; font-weight:600; text-align:center;
+}
+.status.have{color:var(--have)}
+.status.low{color:var(--low)}
+.status.out{color:var(--out); border-style:dashed}
+.del{flex:none; background:none; border:0; color:var(--out); font-size:1.4rem; width:2.2rem; height:2.2rem; display:none}
+body.editing .del{display:block}
+.empty{background:var(--paper); border:1.5px dashed var(--line); border-radius:16px; padding:1.25rem; margin-top:.5rem}
+.empty p{margin:0 0 1rem; color:var(--muted)}
+.empty .btns{display:flex; flex-wrap:wrap; gap:.5rem}
+.hint{font-size:.88rem; color:var(--muted); margin:.25rem 0 0}
+
+/* shopping */
+.shop .row .name{cursor:default}
+.shop .bought{flex:none; background:none; border:1.5px solid var(--line); border-radius:999px; padding:.3rem .8rem; font-size:.88rem}
+
+/* recipes */
+.recipe{border-bottom:1px solid var(--line)}
+.recipe > button{width:100%; display:flex; align-items:center; gap:.75rem; text-align:left; background:none; border:0; padding:.8rem 0}
+.recipe .t{flex:1}
+.recipe .t strong{display:block; font-weight:600}
+.recipe .t span{font-size:.85rem; color:var(--muted)}
+.recipe .min{font-size:.85rem; color:var(--muted); flex:none}
+.recipe .body{padding:0 0 1rem}
+.recipe .body[hidden]{display:none}
+.ing{display:flex; flex-wrap:wrap; gap:.35rem; margin:.25rem 0 .75rem}
+.ing span{font-size:.85rem; border-radius:6px; padding:.15rem .5rem; border:1px solid var(--line)}
+.ing .ok{color:var(--have); border-color:currentColor}
+.ing .miss{color:var(--out); border-color:currentColor; border-style:dashed}
+.ing .opt{color:var(--muted)}
+ol{margin:0 0 .75rem; padding-left:1.25rem}
+ol li{margin-bottom:.35rem}
+details.more summary{cursor:pointer; color:var(--muted); padding:.8rem 0; list-style-position:inside}
+.ask{background:var(--paper); border:1.5px solid var(--line); border-radius:16px; padding:1rem 1.1rem; margin-top:1.75rem}
+.ask h3{margin:0 0 .25rem; font-size:1.05rem}
+.ask p{margin:0 0 .75rem; color:var(--muted); font-size:.92rem}
+.ask .actions{display:flex; gap:.5rem}
+#ai-out{margin-top:.75rem}
+#ai-out .recipe:last-child{border-bottom:0}
+
+.backup{margin-top:2.5rem}
+.backup .btns{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem}
+label.btn{display:inline-block; cursor:pointer}
+/* tab bar */
+nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:5;
+  background:var(--paper); border-top:1.5px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+nav .inner{max-width:640px; margin:0 auto; display:flex}
+nav button{flex:1; background:none; border:0; padding:.55rem 0 .6rem; display:flex; flex-direction:column; align-items:center; gap:.15rem; font-size:.8rem; color:var(--muted); position:relative}
+nav button svg{width:24px; height:24px}
+nav button[aria-current="page"]{color:var(--ink); font-weight:600}
+nav .badge{position:absolute; top:.3rem; left:calc(50% + 6px); background:var(--accent); color:var(--on-accent); font-size:.7rem; font-weight:600; border-radius:999px; min-width:1.2rem; padding:0 .3rem; line-height:1.2rem}
+nav .badge:empty{display:none}
+#toast{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:calc(5rem + env(safe-area-inset-bottom,0px));
+  background:var(--ink); color:var(--bg); padding:.55rem 1rem; border-radius:999px; font-size:.92rem;
+  opacity:0; pointer-events:none; transition:opacity .2s; z-index:6; white-space:nowrap
+}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="title">Stock</h1>
+    <div id="sync">Saved on this phone</div>
+  </header>
+
+  <!-- STOCK -->
+  <section class="view" id="v-stock">
+    <form class="add" id="add-form" autocomplete="off">
+      <input id="add-name" placeholder="Add or search an item" aria-label="Item name" list="catalog-names">
+      <select id="add-loc" aria-label="Where it's stored">
+        <option value="pantry">Pantry</option>
+        <option value="fridge">Fridge</option>
+        <option value="freezer">Freezer</option>
+      </select>
+      <button class="btn" type="submit">Add</button>
+    </form>
+    <datalist id="catalog-names"></datalist>
+    <div class="chips" id="loc-chips">
+      <button data-loc="all" aria-pressed="true">All</button>
+      <button data-loc="pantry" aria-pressed="false">Pantry</button>
+      <button data-loc="fridge" aria-pressed="false">Fridge</button>
+      <button data-loc="freezer" aria-pressed="false">Freezer</button>
+      <button class="edit" id="edit-btn" aria-pressed="false">Edit</button>
+    </div>
+    <div id="stock-list"></div>
+    <div class="backup">
+      <h2>Backup</h2>
+      <p class="hint">Your stock is stored on this phone. Save a backup file now and then, or use it to move your list to another device.</p>
+      <div class="btns">
+        <button class="btn ghost" id="export-btn">Save backup</button>
+        <label class="btn ghost" for="import-file">Restore backup</label>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOPPING -->
+  <section class="view shop" id="v-shop" hidden>
+    <div id="shop-list"></div>
+  </section>
+
+  <!-- RECIPES -->
+  <section class="view" id="v-recipes" hidden>
+    <p class="hint">Matched against what you have or are running low on. Salt, pepper and oil are assumed.</p>
+    <div id="recipe-list"></div>
+  </section>
+</main>
+
+<nav aria-label="Sections">
+  <div class="inner">
+    <button data-tab="stock" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 6h4M10 12h4M10 18h4"/></svg>
+      Stock
+    </button>
+    <button data-tab="shop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      Shopping<span class="badge" id="shop-badge"></span>
+    </button>
+    <button data-tab="recipes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M9 4c0 1.5 1 1.5 1 3M13 4c0 1.5 1 1.5 1 3"/></svg>
+      Recipes<span class="badge" id="rec-badge"></span>
+    </button>
+  </div>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- catalog: key, name, category, storage ---------- */
+const CATALOG = [
+  ["salt","Salt","Spices & herbs","pantry"],["pepper","Black pepper","Spices & herbs","pantry"],
+  ["chili-flakes","Chili flakes","Spices & herbs","pantry"],["paprika","Paprika","Spices & herbs","pantry"],
+  ["smoked-paprika","Smoked paprika","Spices & herbs","pantry"],["cumin","Ground cumin","Spices & herbs","pantry"],
+  ["coriander","Ground coriander","Spices & herbs","pantry"],["garlic-powder","Garlic powder","Spices & herbs","pantry"],
+  ["onion-powder","Onion powder","Spices & herbs","pantry"],["oregano","Oregano","Spices & herbs","pantry"],
+  ["thyme","Thyme","Spices & herbs","pantry"],["bay","Bay leaves","Spices & herbs","pantry"],
+  ["cinnamon","Cinnamon","Spices & herbs","pantry"],["curry","Curry powder","Spices & herbs","pantry"],
+  ["turmeric","Turmeric","Spices & herbs","pantry"],["garam-masala","Garam masala","Spices & herbs","pantry"],
+  ["rosemary","Rosemary","Spices & herbs","pantry"],
+  ["oil","Neutral oil","Oils & sauces","pantry"],["olive-oil","Olive oil","Oils & sauces","pantry"],
+  ["soy","Soy sauce","Oils & sauces","pantry"],["vinegar","Vinegar","Oils & sauces","pantry"],
+  ["balsamic","Balsamic vinegar","Oils & sauces","pantry"],["honey","Honey","Oils & sauces","pantry"],
+  ["sesame-oil","Sesame oil","Oils & sauces","pantry"],["fish-sauce","Fish sauce","Oils & sauces","pantry"],
+  ["tomatoes-can","Canned tomatoes","Cans & jars","pantry"],["tomato-paste","Tomato paste","Cans & jars","pantry"],
+  ["coconut-milk","Coconut milk","Cans & jars","pantry"],["chickpeas","Chickpeas","Cans & jars","pantry"],
+  ["beans","Kidney or black beans","Cans & jars","pantry"],["stock","Stock cubes","Cans & jars","pantry"],
+  ["tuna","Canned tuna","Cans & jars","pantry"],["capers","Capers","Cans & jars","pantry"],
+  ["olives","Olives","Cans & jars","pantry"],["peanut-butter","Peanut butter","Cans & jars","pantry"],
+  ["pasta","Pasta","Dry goods","pantry"],["rice","Rice","Dry goods","pantry"],
+  ["oats","Oats","Dry goods","pantry"],["flour","Flour","Dry goods","pantry"],
+  ["sugar","Sugar","Dry goods","pantry"],["red-lentils","Red lentils","Dry goods","pantry"],
+  ["noodles","Noodles","Dry goods","pantry"],["cornstarch","Cornstarch","Dry goods","pantry"],
+  ["baking-powder","Baking powder","Dry goods","pantry"],
+  ["onion","Onions","Fresh produce","pantry"],["garlic","Garlic","Fresh produce","pantry"],
+  ["potato","Potatoes","Fresh produce","pantry"],["lemon","Lemons","Fresh produce","pantry"],
+  ["carrots","Carrots","Fresh produce","fridge"],["bell-pepper","Bell pepper","Fresh produce","fridge"],
+  ["eggs","Eggs","Dairy & eggs","fridge"],["milk","Milk","Dairy & eggs","fridge"],
+  ["cheese","Cheese","Dairy & eggs","fridge"],["cream","Cream","Dairy & eggs","fridge"],
+  ["yogurt","Yogurt","Dairy & eggs","fridge"],["butter","Butter","Dairy & eggs","freezer"],
+  ["parmesan","Parmesan","Dairy & eggs","freezer"],
+  ["chicken","Chicken thighs","Meat & fish","freezer"],["mince","Minced meat","Meat & fish","freezer"],
+  ["bacon","Bacon","Meat & fish","fridge"],["fish","Fish fillets","Meat & fish","freezer"],
+  ["shrimp","Shrimp","Meat & fish","freezer"],
+  ["peas","Frozen peas","Frozen","freezer"],["spinach","Frozen spinach","Frozen","freezer"],
+  ["broccoli","Broccoli or wok mix","Frozen","freezer"],["ginger","Ginger","Frozen","freezer"],
+  ["bread","Bread","Frozen","freezer"],["berries","Berries","Frozen","freezer"]
+];
+const CAT_ORDER=["Spices & herbs","Oils & sauces","Cans & jars","Dry goods","Fresh produce","Dairy & eggs","Meat & fish","Frozen","Other"];
+const BY_KEY=Object.fromEntries(CATALOG.map(([k,n,c,l])=>[k,{key:k,name:n,cat:c,loc:l}]));
+const BY_NAME=Object.fromEntries(CATALOG.map(([k,n])=>[n.toLowerCase(),k]));
+
+/* ---------- recipes: required keys, optional keys, minutes, steps ---------- */
+const RECIPES=[
+  {t:"Pasta al pomodoro",m:25,req:["pasta","tomatoes-can","garlic","olive-oil"],opt:["chili-flakes","parmesan","oregano"],
+   s:["Boil salted water and cook the pasta.","Gently fry sliced garlic in olive oil until pale gold.","Add the tomatoes, a pinch of salt, and simmer 10–15 min.","Toss with the pasta and a splash of pasta water. Top with parmesan."]},
+  {t:"Aglio e olio",m:15,req:["pasta","garlic","olive-oil","chili-flakes"],opt:["parmesan","lemon"],
+   s:["Cook the pasta in well-salted water.","Warm plenty of olive oil with thinly sliced garlic and chili flakes on low heat.","Add the drained pasta and a ladle of pasta water; toss hard until glossy."]},
+  {t:"Chickpea curry",m:30,req:["chickpeas","coconut-milk","tomatoes-can","onion","garlic","curry"],opt:["ginger","spinach","rice"],
+   s:["Soften chopped onion in oil, then add garlic (and grated ginger).","Stir in curry powder for 30 seconds.","Add tomatoes, coconut milk and drained chickpeas; simmer 15 min.","Stir in spinach at the end. Serve with rice."]},
+  {t:"Red lentil soup",m:30,req:["red-lentils","onion","garlic","cumin","stock","tomato-paste"],opt:["lemon","chili-flakes","carrots"],
+   s:["Fry onion until soft, add garlic, cumin and tomato paste.","Add rinsed lentils and about 1 litre of stock per 250 g lentils.","Simmer 15–20 min until falling apart; blend if you like.","Finish with lemon juice and chili flakes."]},
+  {t:"Egg fried rice",m:15,req:["rice","eggs","soy","peas"],opt:["garlic","sesame-oil","ginger","bacon"],
+   s:["Use cold, cooked rice (yesterday's is ideal).","Scramble the eggs in a hot pan, then set aside.","Fry garlic, add rice and peas on high heat.","Add soy sauce and the eggs; finish with sesame oil."]},
+  {t:"Chili con carne",m:45,req:["mince","beans","tomatoes-can","onion","garlic","cumin","paprika"],opt:["chili-flakes","rice","tomato-paste","bell-pepper"],
+   s:["Brown the mince well, then add onion and garlic.","Stir in cumin, paprika and chili.","Add tomatoes and drained beans; simmer 30 min.","Serve with rice."]},
+  {t:"Chicken stir-fry",m:25,req:["chicken","soy","garlic","ginger","broccoli","rice"],opt:["cornstarch","honey","sesame-oil"],
+   s:["Cook the rice.","Slice chicken thin, toss with a little soy and cornstarch.","Sear in a very hot pan, then add the vegetables.","Add garlic, ginger, soy and honey; cook until glossy."]},
+  {t:"Shakshuka",m:25,req:["eggs","tomatoes-can","onion","garlic","cumin","paprika"],opt:["bell-pepper","bread","chili-flakes"],
+   s:["Soften onion (and pepper) in oil, add garlic and spices.","Add tomatoes and simmer until thick, about 10 min.","Make wells and crack in the eggs; cover until whites set.","Eat with bread."]},
+  {t:"Omelette",m:10,req:["eggs","butter"],opt:["cheese","spinach","bacon"],
+   s:["Beat 2–3 eggs with salt.","Melt butter in a pan on medium heat, add eggs.","Stir gently, then let it set; add fillings and fold."]},
+  {t:"Tuna tomato pasta",m:20,req:["pasta","tuna","tomatoes-can","garlic","olive-oil"],opt:["capers","olives","chili-flakes","lemon"],
+   s:["Cook the pasta.","Fry garlic in olive oil, add tomatoes and simmer 10 min.","Stir in tuna, capers and olives; toss with pasta."]},
+  {t:"Oatmeal",m:10,req:["oats","milk"],opt:["honey","cinnamon","berries","peanut-butter"],
+   s:["Simmer oats with about twice the volume of milk, stirring.","Cook 4–5 min until creamy.","Top with berries, honey or cinnamon."]},
+  {t:"Pancakes",m:30,req:["flour","eggs","milk","butter"],opt:["sugar","berries","honey"],
+   s:["Whisk 2 eggs, 5 dl milk and 2.5 dl flour with a pinch of salt; rest 10 min.","Add a little melted butter to the batter.","Fry thin pancakes in a buttered pan."]},
+  {t:"Crispy roast potatoes",m:50,req:["potato"],opt:["rosemary","garlic","paprika"],
+   s:["Heat the oven to 220°C.","Parboil chunks 8 min, drain and shake to rough up the edges.","Toss with oil and salt, roast 35–40 min, turning once."]},
+  {t:"Coconut shrimp curry",m:25,req:["shrimp","coconut-milk","curry","garlic","onion","rice"],opt:["ginger","lemon","fish-sauce","spinach"],
+   s:["Cook the rice.","Soften onion, add garlic, ginger and curry powder.","Pour in coconut milk and simmer 5 min.","Add shrimp and cook 3–4 min; finish with lemon and fish sauce."]},
+  {t:"Lemon butter fish",m:20,req:["fish","butter","lemon","garlic"],opt:["potato","peas"],
+   s:["Pat fish dry, season with salt.","Fry in oil until golden, flip once.","Add butter and garlic, baste, then squeeze over lemon."]},
+  {t:"Spaghetti bolognese",m:50,req:["pasta","mince","tomatoes-can","tomato-paste","onion","garlic","oregano"],opt:["carrots","parmesan","bay"],
+   s:["Soften finely chopped onion (and carrot).","Brown the mince, add garlic and tomato paste.","Add tomatoes, oregano and bay; simmer at least 30 min.","Serve with pasta and parmesan."]},
+  {t:"Hummus",m:10,req:["chickpeas","garlic","lemon","olive-oil","cumin"],opt:["paprika","bread"],
+   s:["Blend chickpeas with garlic, lemon juice, cumin and salt.","Stream in olive oil and a little cold water until smooth.","Top with oil and paprika."]},
+  {t:"Potato and pea curry",m:35,req:["potato","peas","onion","garlic","tomatoes-can","curry"],opt:["ginger","turmeric","garam-masala","rice"],
+   s:["Fry onion, garlic and ginger, then the spices.","Add diced potatoes and tomatoes with a splash of water.","Simmer 20 min until tender; add peas for the last 5."]},
+  {t:"Garlic butter noodles",m:15,req:["noodles","garlic","butter","soy"],opt:["parmesan","sesame-oil","chili-flakes"],
+   s:["Cook the noodles.","Melt butter, fry lots of garlic gently.","Add soy sauce and the noodles; toss well."]},
+  {t:"Quick mac and cheese",m:25,req:["pasta","cheese","milk","butter","flour"],opt:["paprika","bacon"],
+   s:["Cook short pasta.","Melt 2 tbsp butter, stir in 2 tbsp flour, then 5 dl milk slowly.","Simmer until thick, melt in the cheese, mix with pasta."]},
+  {t:"Chicken in tomato sauce",m:45,req:["chicken","tomatoes-can","onion","garlic","oregano"],opt:["olives","bell-pepper","rice","pasta"],
+   s:["Brown seasoned chicken thighs, set aside.","Soften onion and garlic in the same pan.","Add tomatoes, oregano and the chicken; simmer 25 min."]},
+  {t:"Bean and tomato soup",m:35,req:["beans","tomatoes-can","onion","garlic","stock"],opt:["pasta","carrots","spinach","parmesan"],
+   s:["Soften onion and garlic (and carrot).","Add tomatoes, beans and about 1 litre stock.","Simmer 15 min; add small pasta and cook until tender."]}
+];
+
+/* ---------- state + persistence ---------- */
+const LKEY="kitchen-stock-v1";
+let state={items:[]};
+try{const s=JSON.parse(localStorage.getItem(LKEY)); if(s&&Array.isArray(s.items)) state=s;}catch(e){}
+function persist(){ try{localStorage.setItem(LKEY,JSON.stringify(state))}catch(e){} }
+if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+/* ---------- helpers ---------- */
+const slug=s=>s.toLowerCase().trim().replace(/[^a-z0-9æøå]+/g,"-").replace(/^-|-$/g,"");
+const uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LOC_LABEL={pantry:"Pantry",fridge:"Fridge",freezer:"Freezer"};
+const STATUS_LABEL={have:"Have",low:"Low",out:"Out"};
+const NEXT={have:"low",low:"out",out:"have"};
+function toast(msg){const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("show"),1800);}
+function haveKeys(){
+  const s=new Set(["salt","pepper","oil"]);
+  state.items.forEach(i=>{ if(i.status!=="out"){ s.add(i.key); s.add(slug(i.name)); } });
+  return s;
+}
+function nameOf(k){ const it=state.items.find(i=>i.key===k); return it?it.name:(BY_KEY[k]?BY_KEY[k].name:k); }
+function addItem(name,loc,status){
+  name=name.trim(); if(!name) return null;
+  const ck=BY_NAME[name.toLowerCase()];
+  const key=ck||slug(name);
+  const existing=state.items.find(i=>i.key===key);
+  if(existing){ existing.status=status; return existing; }
+  const base=ck?BY_KEY[ck]:null;
+  const it={id:uid(),key,name:base?base.name:name,cat:base?base.cat:"Other",loc:loc||(base?base.loc:"pantry"),status};
+  state.items.push(it); return it;
+}
+
+/* ---------- tabs ---------- */
+let tab="stock";
+const TITLES={stock:"Stock",shop:"Shopping",recipes:"Recipes"};
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
+  tab=b.dataset.tab;
+  document.querySelectorAll("nav button").forEach(x=>{ if(x===b) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current"); });
+  document.getElementById("v-stock").hidden=tab!=="stock";
+  document.getElementById("v-shop").hidden=tab!=="shop";
+  document.getElementById("v-recipes").hidden=tab!=="recipes";
+  document.getElementById("title").textContent=TITLES[tab];
+  window.scrollTo(0,0);
+  render();
+}));
+
+/* ---------- stock view ---------- */
+let locFilter="all", query="";
+document.getElementById("catalog-names").innerHTML=CATALOG.map(c=>`<option value="${esc(c[1])}">`).join("");
+document.getElementById("loc-chips").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-loc]"); if(!b) return;
+  locFilter=b.dataset.loc;
+  document.querySelectorAll("#loc-chips [data-loc]").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  renderStock();
+});
+document.getElementById("edit-btn").addEventListener("click",e=>{
+  const on=document.body.classList.toggle("editing");
+  e.currentTarget.setAttribute("aria-pressed",on);
+  e.currentTarget.textContent=on?"Done":"Edit";
+});
+const nameIn=document.getElementById("add-name"), locIn=document.getElementById("add-loc");
+nameIn.addEventListener("input",()=>{
+  query=nameIn.value.trim().toLowerCase();
+  const ck=BY_NAME[query]; if(ck) locIn.value=BY_KEY[ck].loc;
+  renderStock();
+});
+document.getElementById("add-form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const it=addItem(nameIn.value,locIn.value,"have");
+  if(!it) return;
+  nameIn.value=""; query=""; persist(); render(); toast(it.name+" added");
+});
+function renderStock(){
+  const el=document.getElementById("stock-list");
+  if(!state.items.length){
+    el.innerHTML=`<div class="empty"><p>Your kitchen is empty. Load the pantry list to tick off what you already have, or add items one by one above.</p>
+      <div class="btns"><button class="btn" id="load-starter">Load pantry list</button></div></div>`;
+    document.getElementById("load-starter").onclick=()=>{
+      state.items=CATALOG.map(([k,n,c,l])=>({id:uid(),key:k,name:n,cat:c,loc:l,status:"out"}));
+      persist(); render(); toast("Tap Out to mark what you have");
+    };
+    return;
+  }
+  let items=state.items.filter(i=>(locFilter==="all"||i.loc===locFilter)&&(!query||i.name.toLowerCase().includes(query)));
+  if(!items.length){ el.innerHTML=`<p class="hint">${query?"No match. Press Add to add it.":"Nothing stored here yet."}</p>`; return; }
+  const groups={};
+  items.forEach(i=>(groups[i.cat]=groups[i.cat]||[]).push(i));
+  el.innerHTML=CAT_ORDER.filter(c=>groups[c]).map(c=>{
+    const g=groups[c].sort((a,b)=>a.name.localeCompare(b.name));
+    const have=g.filter(i=>i.status!=="out").length;
+    return `<h2>${esc(c)}<small>${have} of ${g.length}</small></h2><ul>${g.map(i=>`
+      <li class="row" data-id="${i.id}">
+        <span class="name">${esc(i.name)}${locFilter==="all"?`<span class="loc">${LOC_LABEL[i.loc]||""}</span>`:""}</span>
+        <button class="status ${i.status}" data-act="cycle" aria-label="${esc(i.name)}: ${STATUS_LABEL[i.status]}. Tap to change">${STATUS_LABEL[i.status]}</button>
+        <button class="del" data-act="del" aria-label="Remove ${esc(i.name)}">×</button>
+      </li>`).join("")}</ul>`;
+  }).join("")+`<p class="hint" style="margin-top:1rem">Tap a status to switch between Have, Low and Out.</p>`;
+}
+document.getElementById("stock-list").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return;
+  const id=b.closest("li").dataset.id, it=state.items.find(i=>i.id===id); if(!it) return;
+  if(b.dataset.act==="cycle"){ it.status=NEXT[it.status]||"have"; }
+  else { state.items=state.items.filter(i=>i.id!==id); toast(it.name+" removed"); }
+  persist(); render();
+});
+
+/* ---------- shopping view ---------- */
+function renderShop(){
+  const el=document.getElementById("shop-list");
+  const need=state.items.filter(i=>i.status!=="have");
+  if(!need.length){ el.innerHTML=`<div class="empty"><p>Nothing to buy. Items you mark Low or Out show up here.</p></div>`; return; }
+  const sec=(title,list)=>list.length?`<h2>${title}<small>${list.length}</small></h2><ul>${list.sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`
+    <li class="row" data-id="${i.id}"><span class="name">${esc(i.name)}<span class="loc">${esc(i.cat)}</span></span>
+    <button class="bought" data-act="bought">Bought</button></li>`).join("")}</ul>`:"";
+  el.innerHTML=sec("Out",need.filter(i=>i.status==="out"))+sec("Running low",need.filter(i=>i.status==="low"));
+}
+document.getElementById("shop-list").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act=bought]"); if(!b) return;
+  const it=state.items.find(i=>i.id===b.closest("li").dataset.id); if(!it) return;
+  it.status="have"; persist(); render(); toast(it.name+" back in stock");
+});
+
+/* ---------- recipes view ---------- */
+const open=new Set();
+function recipeHTML(r,have,idx){
+  const missing=r.req.filter(k=>!have.has(k));
+  const isOpen=open.has(idx);
+  const sub=missing.length?`Missing ${missing.map(nameOf).join(", ")}`:`You have everything`;
+  return `<div class="recipe" data-idx="${idx}">
+    <button data-act="toggle" aria-expanded="${isOpen}"><span class="t"><strong>${esc(r.t)}</strong><span>${esc(sub)}</span></span><span class="min">${r.m} min</span></button>
+    <div class="body" ${isOpen?"":"hidden"}>
+      <div class="ing">${r.req.map(k=>`<span class="${have.has(k)?"ok":"miss"}">${esc(nameOf(k))}</span>`).join("")}
+      ${(r.opt||[]).map(k=>`<span class="${have.has(k)?"ok":"opt"}">${esc(nameOf(k))} (optional)</span>`).join("")}</div>
+      <ol>${r.s.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+      ${missing.length?`<button class="btn ghost" data-act="shop">Add missing to shopping</button>`:""}
+    </div></div>`;
+}
+function renderRecipes(){
+  const have=haveKeys();
+  const scored=RECIPES.map((r,i)=>({r,i,miss:r.req.filter(k=>!have.has(k)).length}));
+  const ready=scored.filter(x=>x.miss===0), almost=scored.filter(x=>x.miss>0&&x.miss<=2), rest=scored.filter(x=>x.miss>2);
+  let html="";
+  html+=`<h2>Ready to cook<small>${ready.length}</small></h2>`+(ready.length?ready.map(x=>recipeHTML(x.r,have,x.i)).join(""):`<p class="hint">Nothing complete yet. Check the list below for close matches.</p>`);
+  if(almost.length) html+=`<h2>Missing one or two<small>${almost.length}</small></h2>`+almost.sort((a,b)=>a.miss-b.miss).map(x=>recipeHTML(x.r,have,x.i)).join("");
+  if(rest.length) html+=`<details class="more"><summary>${rest.length} more recipes need a bigger shop</summary>${rest.sort((a,b)=>a.miss-b.miss).map(x=>recipeHTML(x.r,have,x.i)).join("")}</details>`;
+  document.getElementById("recipe-list").innerHTML=html;
+  document.getElementById("rec-badge").textContent=ready.length||"";
+}
+document.getElementById("recipe-list").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return;
+  const idx=+b.closest(".recipe").dataset.idx;
+  if(b.dataset.act==="toggle"){ open.has(idx)?open.delete(idx):open.add(idx); renderRecipes(); }
+  else if(b.dataset.act==="shop"){
+    const have=haveKeys();
+    const miss=RECIPES[idx].req.filter(k=>!have.has(k));
+    miss.forEach(k=>{ const ex=state.items.find(i=>i.key===k); if(ex) ex.status="out"; else { const c=BY_KEY[k]; state.items.push({id:uid(),key:k,name:c?c.name:k,cat:c?c.cat:"Other",loc:c?c.loc:"pantry",status:"out"}); } });
+    persist(); render(); toast(miss.length+" added to shopping");
+  }
+});
+
+/* ---------- backup ---------- */
+document.getElementById("export-btn").onclick=async()=>{
+  const json=JSON.stringify({app:"kitchen",version:1,saved:new Date().toISOString(),items:state.items},null,1);
+  const name="kitchen-backup-"+new Date().toISOString().slice(0,10)+".json";
+  const file=new File([json],name,{type:"application/json"});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:"Kitchen backup"}); return; }
+  }catch(e){ if(e&&e.name==="AbortError") return; }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+document.getElementById("import-file").onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d||!Array.isArray(d.items)) throw 0;
+    if(state.items.length&&!confirm("Replace your current stock with this backup?")) return;
+    state={items:d.items.filter(i=>i&&i.name).map(i=>({id:i.id||uid(),key:i.key||slug(i.name),name:String(i.name),cat:i.cat||"Other",loc:i.loc||"pantry",status:["have","low","out"].includes(i.status)?i.status:"have"}))};
+    persist(); render(); toast("Backup restored");
+  }catch(err){ toast("That file isn't a Kitchen backup"); }
+};
+
+/* ---------- render ---------- */
+function render(){
+  const need=state.items.filter(i=>i.status!=="have").length;
+  document.getElementById("shop-badge").textContent=need||"";
+  if(tab==="stock") renderStock();
+  if(tab==="shop") renderShop();
+  renderRecipes();
+}
+render();
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
+</script>
+</body>
+</html>
