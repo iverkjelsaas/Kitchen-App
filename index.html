@@ -90,6 +90,23 @@ ul{list-style:none; margin:0; padding:0}
 .linkbtn[hidden]{display:none}
 .ing button{font-size:.85rem; border-radius:6px; padding:.15rem .5rem; border:1px solid var(--line); background:none}
 .hint.small{font-size:.78rem; margin:-.35rem 0 .6rem}
+.sheet-bg{position:fixed; inset:0; z-index:20; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; justify-content:center}
+.sheet-bg[hidden]{display:none}
+.sheet{background:var(--bg); width:100%; max-width:640px; max-height:88vh; border-radius:20px 20px 0 0; display:flex; flex-direction:column; padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-head{padding:1.1rem 1.1rem .25rem}
+.sheet-head h3{margin:0 0 .6rem; font-size:1.35rem; font-weight:800; letter-spacing:-.01em}
+.sheet-head .search{margin-bottom:.4rem}
+.pickbar{display:flex; gap:1rem}
+.sheet-list{flex:1; overflow-y:auto; padding:0 1.1rem .5rem; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
+.sheet-list h4{margin:1rem 0 .1rem; font-size:1rem; font-weight:600; padding-bottom:.3rem; border-bottom:2px solid var(--ink)}
+.pick{display:flex; align-items:center; gap:.8rem; padding:.6rem 0; border-bottom:1px solid var(--line); cursor:pointer}
+.pick input{flex:none; width:22px; height:22px; margin:0; accent-color:var(--accent)}
+.pick .n{flex:1}
+.pick .c{display:block; font-size:.78rem; color:var(--muted)}
+.sheet-foot{display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; padding:.75rem 1.1rem; border-top:1.5px solid var(--line); background:var(--paper)}
+.sheet-foot .grow{flex:1 1 100%; font-size:.9rem; color:var(--muted)}
+.sheet-foot .btn{flex:1 1 auto}
+.btn:disabled{opacity:.45; cursor:default}
 .del{flex:none; background:none; border:0; color:var(--out); font-size:1.4rem; width:2.2rem; height:2.2rem; display:none}
 body.editing .del{display:block}
 .empty{background:var(--paper); border:1.5px dashed var(--line); border-radius:16px; padding:1.25rem; margin-top:.5rem}
@@ -236,6 +253,22 @@ nav .badge:empty{display:none}
     </button>
   </div>
 </nav>
+<div class="sheet-bg" id="picker" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+    <div class="sheet-head">
+      <h3 id="picker-title">Add ingredients</h3>
+      <input id="picker-search" class="search" type="search" placeholder="Filter ingredients" aria-label="Filter ingredients" autocomplete="off">
+      <div class="pickbar"><button class="linkbtn" id="pick-all">Select all shown</button><button class="linkbtn" id="pick-none">Clear selection</button></div>
+    </div>
+    <div class="sheet-list" id="picker-list"></div>
+    <div class="sheet-foot">
+      <span class="grow" id="pick-count">Nothing selected</span>
+      <button class="btn" id="pick-have" disabled>Add as Have</button>
+      <button class="btn ghost" id="pick-shop" disabled>Add to shopping</button>
+      <button class="btn ghost" id="pick-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -912,11 +945,46 @@ document.getElementById("hide-none").addEventListener("click",e=>{
   hideNone=!hideNone; e.currentTarget.setAttribute("aria-pressed",hideNone); renderStock();
 });
 const missingExtra=()=>{ const have=new Set(state.items.map(i=>i.key)); return ALL_CATALOG.filter(c=>!have.has(c[0])); };
-function addExtra(){
-  const add=missingExtra();
-  add.forEach(([k,n,c,l])=>state.items.push({id:uid(),key:k,name:n,cat:c,loc:l,status:"none"}));
-  persist(); render(); toast(add.length+" ingredients added as Not kept");
+const picked=new Set();
+const pickerEl=document.getElementById("picker"), pickerList=document.getElementById("picker-list"), pickerSearch=document.getElementById("picker-search");
+const pickerShown=()=>{ const q=pickerSearch.value.trim().toLowerCase(); return missingExtra().filter(c=>!q||c[1].toLowerCase().includes(q)||c[2].toLowerCase().includes(q)); };
+function openPicker(){
+  picked.clear(); pickerSearch.value=""; renderPicker();
+  pickerEl.hidden=false; document.body.style.overflow="hidden"; pickerList.scrollTop=0;
 }
+function closePicker(){ pickerEl.hidden=true; document.body.style.overflow=""; }
+function renderPicker(){
+  const list=pickerShown(), groups={};
+  list.forEach(c=>(groups[c[2]]=groups[c[2]]||[]).push(c));
+  pickerList.innerHTML=list.length?CAT_ORDER.filter(g=>groups[g]).map(g=>`<h4>${esc(g)}</h4>`+groups[g].sort((a,b)=>a[1].localeCompare(b[1])).map(([k,n,c,l])=>{
+    const u=USE_COUNT[k]||0;
+    return `<label class="pick"><input type="checkbox" data-key="${esc(k)}" ${picked.has(k)?"checked":""}><span class="n">${esc(n)}<span class="c">${LOC_LABEL[l]||""}${u?` · used in ${u} recipe${u===1?"":"s"}`:""}</span></span></label>`;
+  }).join("")).join(""):`<p class="hint">${pickerSearch.value?"No ingredients match.":"Every recipe ingredient is already on your list."}</p>`;
+  updatePickCount();
+}
+function updatePickCount(){
+  const n=picked.size;
+  document.getElementById("pick-count").textContent=n?`${n} selected`:"Nothing selected";
+  document.getElementById("pick-have").disabled=!n; document.getElementById("pick-shop").disabled=!n;
+}
+pickerList.addEventListener("change",e=>{
+  const cb=e.target.closest("input[data-key]"); if(!cb) return;
+  cb.checked?picked.add(cb.dataset.key):picked.delete(cb.dataset.key); updatePickCount();
+});
+pickerSearch.addEventListener("input",renderPicker);
+document.getElementById("pick-all").addEventListener("click",()=>{ pickerShown().forEach(c=>picked.add(c[0])); renderPicker(); });
+document.getElementById("pick-none").addEventListener("click",()=>{ picked.clear(); renderPicker(); });
+document.getElementById("pick-cancel").addEventListener("click",closePicker);
+pickerEl.addEventListener("click",e=>{ if(e.target===pickerEl) closePicker(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!pickerEl.hidden) closePicker(); });
+function addPicked(status){
+  const add=ALL_CATALOG.filter(c=>picked.has(c[0]));
+  add.forEach(([k,n,c,l])=>state.items.push({id:uid(),key:k,name:n,cat:c,loc:l,status}));
+  closePicker(); persist(); render();
+  toast(add.length+(status==="out"?" added to shopping":" added as Have"));
+}
+document.getElementById("pick-have").addEventListener("click",()=>addPicked("have"));
+document.getElementById("pick-shop").addEventListener("click",()=>addPicked("out"));
 document.getElementById("catalog-names").innerHTML=ALL_CATALOG.map(c=>`<option value="${esc(c[1])}">`).join("");
 document.getElementById("loc-chips").addEventListener("click",e=>{
   const b=e.target.closest("button[data-loc]"); if(!b) return;
@@ -954,8 +1022,9 @@ function renderStock(){
   }
   let dismissed=false; try{ dismissed=localStorage.getItem("kitchen-extra-dismissed")==="1"; }catch(_){}
   const extraN=missingExtra().length;
-  const banner=(extraN&&!dismissed)?`<div class="banner"><p><strong>${extraN} ingredients</strong> used by the new recipes aren't on your list yet. Add them as Not kept, then tap the ones you have.</p>
-    <div class="btns"><button class="btn" data-act="add-extra">Add them</button><button class="btn ghost" data-act="dismiss-extra">Not now</button></div></div>`:"";
+  const banner=!extraN?"":(!dismissed?`<div class="banner"><p><strong>${extraN} ingredients</strong> used by the recipes aren't on your list yet. Pick the ones you want to add.</p>
+    <div class="btns"><button class="btn" data-act="add-extra">Choose ingredients</button><button class="btn ghost" data-act="dismiss-extra">Not now</button></div></div>`
+    :`<button class="linkbtn" data-act="add-extra">+ Add ingredients from the recipes (${extraN})</button>`);
   let items=state.items.filter(i=>(locFilter==="all"||i.loc===locFilter)&&!(hideNone&&i.status==="none")&&(!query||i.name.toLowerCase().includes(query)));
   if(!items.length){ el.innerHTML=banner+`<p class="hint">${query?"No match. Press Add to add it.":"Nothing to show here."}</p>`; return; }
   const groups={};
@@ -975,7 +1044,7 @@ function renderStock(){
 }
 document.getElementById("stock-list").addEventListener("click",e=>{
   const b=e.target.closest("button[data-act]"); if(!b) return;
-  if(b.dataset.act==="add-extra"){ addExtra(); return; }
+  if(b.dataset.act==="add-extra"){ openPicker(); return; }
   if(b.dataset.act==="dismiss-extra"){ try{ localStorage.setItem("kitchen-extra-dismissed","1"); }catch(_){} renderStock(); return; }
   const li=b.closest("li"); if(!li) return;
   const id=li.dataset.id, it=state.items.find(i=>i.id===id); if(!it) return;
