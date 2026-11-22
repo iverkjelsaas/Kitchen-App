@@ -113,6 +113,9 @@ details.more summary{cursor:pointer; color:var(--muted); padding:.8rem 0; list-s
 .backup{margin-top:2.5rem}
 .backup .btns{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem}
 label.btn{display:inline-block; cursor:pointer}
+.search{width:100%; background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:.65rem .8rem; margin-bottom:.75rem; -webkit-user-select:text; user-select:text}
+.recipe .cat{font-size:.75rem; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:0 .35rem; margin-left:.35rem; font-weight:400; vertical-align:1px}
+.showmore{display:block; width:100%; margin:.75rem 0 0; text-align:center}
 /* tab bar */
 nav{
   position:fixed; left:0; right:0; bottom:0; z-index:5;
@@ -179,7 +182,9 @@ nav .badge:empty{display:none}
 
   <!-- RECIPES -->
   <section class="view" id="v-recipes" hidden>
-    <p class="hint">Matched against what you have or are running low on. Salt, pepper and oil are assumed.</p>
+    <input id="rec-search" class="search" type="search" placeholder="Search recipes or ingredients" aria-label="Search recipes" autocomplete="off">
+    <div class="chips" id="rec-chips"></div>
+    <p class="hint" id="rec-hint">Matched against what you have or are running low on. Salt, pepper and oil are assumed.</p>
     <div id="recipe-list"></div>
   </section>
 </main>
@@ -242,9 +247,11 @@ const CATALOG = [
   ["broccoli","Broccoli or wok mix","Frozen","freezer"],["ginger","Ginger","Frozen","freezer"],
   ["bread","Bread","Frozen","freezer"],["berries","Berries","Frozen","freezer"]
 ];
+const EXTRA_CATALOG=[["tomato", "Fresh tomatoes", "Fresh produce", "pantry"], ["cucumber", "Cucumber", "Fresh produce", "fridge"], ["zucchini", "Zucchini", "Fresh produce", "fridge"], ["mushrooms", "Mushrooms", "Fresh produce", "fridge"], ["cabbage", "Cabbage", "Fresh produce", "fridge"], ["leek", "Leek", "Fresh produce", "fridge"], ["spring-onion", "Spring onions", "Fresh produce", "fridge"], ["fresh-chili", "Fresh chili", "Fresh produce", "fridge"], ["lime", "Limes", "Fresh produce", "pantry"], ["avocado", "Avocado", "Fresh produce", "pantry"], ["apples", "Apples", "Fresh produce", "pantry"], ["bananas", "Bananas", "Fresh produce", "pantry"], ["oranges", "Oranges", "Fresh produce", "pantry"], ["lettuce", "Lettuce", "Fresh produce", "fridge"], ["sweet-potato", "Sweet potatoes", "Fresh produce", "pantry"], ["cauliflower", "Cauliflower", "Fresh produce", "fridge"], ["eggplant", "Eggplant", "Fresh produce", "fridge"], ["celery", "Celery", "Fresh produce", "fridge"], ["red-onion", "Red onions", "Fresh produce", "pantry"], ["parsley", "Parsley", "Fresh produce", "fridge"], ["cilantro", "Cilantro", "Fresh produce", "fridge"], ["basil", "Basil", "Fresh produce", "fridge"], ["dill", "Dill", "Fresh produce", "fridge"], ["swede", "Swede (kålrot)", "Fresh produce", "fridge"], ["beetroot", "Beetroot", "Fresh produce", "fridge"], ["sour-cream", "Sour cream (rømme)", "Dairy & eggs", "fridge"], ["creme-fraiche", "Crème fraîche", "Dairy & eggs", "fridge"], ["cream-cheese", "Cream cheese", "Dairy & eggs", "fridge"], ["cottage-cheese", "Cottage cheese", "Dairy & eggs", "fridge"], ["feta", "Feta", "Dairy & eggs", "fridge"], ["mozzarella", "Mozzarella", "Dairy & eggs", "fridge"], ["halloumi", "Halloumi", "Dairy & eggs", "fridge"], ["brown-cheese", "Brown cheese (brunost)", "Dairy & eggs", "fridge"], ["salmon", "Salmon", "Meat & fish", "freezer"], ["cod", "Cod", "Meat & fish", "freezer"], ["smoked-salmon", "Smoked salmon", "Meat & fish", "fridge"], ["pork", "Pork chops or fillet", "Meat & fish", "freezer"], ["sausage", "Sausages", "Meat & fish", "fridge"], ["chorizo", "Chorizo", "Meat & fish", "fridge"], ["ham", "Ham", "Meat & fish", "fridge"], ["beef", "Beef steak or strips", "Meat & fish", "freezer"], ["lamb", "Lamb", "Meat & fish", "freezer"], ["chicken-breast", "Chicken breast", "Meat & fish", "freezer"], ["tofu", "Tofu", "Meat & fish", "fridge"], ["corn", "Sweetcorn", "Cans & jars", "pantry"], ["pineapple", "Canned pineapple", "Cans & jars", "pantry"], ["white-beans", "White beans", "Cans & jars", "pantry"], ["tahini", "Tahini", "Cans & jars", "pantry"], ["pesto", "Pesto", "Cans & jars", "fridge"], ["curry-paste", "Thai curry paste", "Cans & jars", "fridge"], ["salsa", "Taco salsa", "Cans & jars", "pantry"], ["jam", "Jam", "Cans & jars", "pantry"], ["mayonnaise", "Mayonnaise", "Oils & sauces", "fridge"], ["ketchup", "Ketchup", "Oils & sauces", "fridge"], ["mustard", "Mustard", "Oils & sauces", "fridge"], ["sweet-chili", "Sweet chili sauce", "Oils & sauces", "pantry"], ["oyster-sauce", "Oyster sauce", "Oils & sauces", "pantry"], ["worcestershire", "Worcestershire sauce", "Oils & sauces", "pantry"], ["sriracha", "Sriracha", "Oils & sauces", "pantry"], ["rice-vinegar", "Rice vinegar", "Oils & sauces", "pantry"], ["yeast", "Yeast", "Dry goods", "pantry"], ["baking-soda", "Baking soda", "Dry goods", "pantry"], ["cocoa", "Cocoa powder", "Dry goods", "pantry"], ["vanilla", "Vanilla sugar or extract", "Dry goods", "pantry"], ["chocolate", "Chocolate", "Dry goods", "pantry"], ["icing-sugar", "Icing sugar", "Dry goods", "pantry"], ["brown-sugar", "Brown sugar", "Dry goods", "pantry"], ["raisins", "Raisins", "Dry goods", "pantry"], ["coconut", "Desiccated coconut", "Dry goods", "pantry"], ["nuts", "Nuts", "Dry goods", "pantry"], ["biscuits", "Digestive biscuits", "Dry goods", "pantry"], ["tortillas", "Tortillas", "Dry goods", "pantry"], ["tortilla-chips", "Tortilla chips", "Dry goods", "pantry"], ["taco-spice", "Taco spice mix", "Spices & herbs", "pantry"], ["breadcrumbs", "Breadcrumbs", "Dry goods", "pantry"], ["quinoa", "Quinoa", "Dry goods", "pantry"], ["couscous", "Couscous", "Dry goods", "pantry"], ["bulgur", "Bulgur", "Dry goods", "pantry"], ["gnocchi", "Gnocchi", "Dry goods", "pantry"], ["lasagne", "Lasagne sheets", "Dry goods", "pantry"], ["rice-noodles", "Rice noodles", "Dry goods", "pantry"], ["popcorn", "Popcorn kernels", "Dry goods", "pantry"], ["cayenne", "Cayenne", "Spices & herbs", "pantry"], ["nutmeg", "Nutmeg", "Spices & herbs", "pantry"], ["cardamom", "Cardamom", "Spices & herbs", "pantry"], ["five-spice", "Five-spice", "Spices & herbs", "pantry"], ["sesame-seeds", "Sesame seeds", "Spices & herbs", "pantry"], ["puff-pastry", "Puff pastry", "Frozen", "freezer"], ["pita", "Pita or flatbread", "Frozen", "freezer"], ["buns", "Burger buns", "Frozen", "freezer"], ["green-beans", "Green beans", "Frozen", "freezer"]];
+const ALL_CATALOG=CATALOG.concat(EXTRA_CATALOG);
 const CAT_ORDER=["Spices & herbs","Oils & sauces","Cans & jars","Dry goods","Fresh produce","Dairy & eggs","Meat & fish","Frozen","Other"];
-const BY_KEY=Object.fromEntries(CATALOG.map(([k,n,c,l])=>[k,{key:k,name:n,cat:c,loc:l}]));
-const BY_NAME=Object.fromEntries(CATALOG.map(([k,n])=>[n.toLowerCase(),k]));
+const BY_KEY=Object.fromEntries(ALL_CATALOG.map(([k,n,c,l])=>[k,{key:k,name:n,cat:c,loc:l}]));
+const BY_NAME=Object.fromEntries(ALL_CATALOG.map(([k,n])=>[n.toLowerCase(),k]));
 
 /* ---------- recipes: required keys, optional keys, minutes, steps ---------- */
 const RECIPES=[
@@ -293,6 +300,529 @@ const RECIPES=[
   {t:"Bean and tomato soup",m:35,req:["beans","tomatoes-can","onion","garlic","stock"],opt:["pasta","carrots","spinach","parmesan"],
    s:["Soften onion and garlic (and carrot).","Add tomatoes, beans and about 1 litre stock.","Simmer 15 min; add small pasta and cook until tender."]}
 ];
+const ORIG_CAT={"Oatmeal":"B","Pancakes":"B","Omelette":"B","Hummus":"N","Red lentil soup":"S","Bean and tomato soup":"S"};
+RECIPES.forEach(r=>{ r.c=ORIG_CAT[r.t]||"D"; });
+const MORE_RECIPES=`D|Spaghetti carbonara|20|pasta eggs bacon parmesan|garlic|Cook spaghetti in well-salted water.; Whisk 3 eggs with plenty of grated parmesan and black pepper.; Fry the bacon until crisp, take the pan off the heat.; Toss hot pasta with the bacon, then the egg mix and a splash of pasta water until creamy, not scrambled.
+D|Cacio e pepe|15|pasta parmesan pepper|butter|Cook the pasta and keep a mug of pasta water.; Toast lots of cracked black pepper in a dry pan, add a ladle of pasta water.; Add the pasta, then the finely grated cheese off the heat, tossing until a glossy sauce forms.
+D|Pesto pasta|15|pasta pesto|parmesan nuts tomato|Cook the pasta.; Loosen the pesto with a splash of pasta water.; Toss together and top with parmesan and toasted nuts.
+D|Creamy mushroom pasta|25|pasta mushrooms garlic cream|parmesan thyme parsley|Cook the pasta.; Fry sliced mushrooms hot until browned, add garlic and thyme.; Pour in cream, simmer 3 min, toss with pasta and parmesan.
+D|Pasta puttanesca|20|pasta tomatoes-can garlic olives capers|chili-flakes parsley|Fry garlic and chili in olive oil.; Add tomatoes, olives and capers, simmer 10 min.; Toss with the pasta.
+D|Penne arrabbiata|20|pasta tomatoes-can garlic chili-flakes olive-oil|parsley parmesan|Fry garlic and plenty of chili flakes gently in olive oil.; Add tomatoes and simmer 10 min until thick.; Toss with penne.
+D|Bacon and tomato pasta (amatriciana-style)|25|pasta bacon tomatoes-can onion|chili-flakes parmesan|Fry diced bacon until crisp, add sliced onion and soften.; Add tomatoes and chili, simmer 10 min.; Toss with pasta and grated cheese.
+D|Creamy tomato pasta|20|pasta tomato-paste cream garlic onion|chili-flakes parmesan basil|Soften onion and garlic, stir in 3 tbsp tomato paste and fry 1 min.; Add cream and a splash of pasta water, simmer until smooth.; Toss with pasta and parmesan.
+D|Lemon garlic shrimp pasta|20|pasta shrimp garlic lemon butter|chili-flakes parsley|Cook the pasta.; Fry garlic in butter and oil, add shrimp and cook 2–3 min.; Add lemon zest and juice, toss with pasta and a splash of pasta water.
+D|Creamy salmon pasta|25|pasta salmon cream lemon|spinach dill garlic|Cook the pasta.; Pan-fry diced salmon, then add cream and lemon zest.; Stir in spinach and dill, toss with the pasta.
+D|Smoked salmon pasta|15|pasta smoked-salmon creme-fraiche lemon|dill peas|Cook the pasta (add peas for the last 2 min).; Stir crème fraîche, lemon zest and a little pasta water into the drained pasta.; Fold in torn smoked salmon and dill.
+D|Chicken pesto pasta|25|pasta chicken pesto|tomato spinach parmesan|Cook the pasta.; Fry sliced chicken until cooked through.; Toss pasta, chicken and pesto with a splash of pasta water.
+D|Creamy chicken and mushroom pasta|30|pasta chicken mushrooms cream garlic|thyme parmesan|Brown sliced chicken, set aside.; Fry mushrooms and garlic, add cream and simmer.; Return the chicken and toss with pasta.
+D|Cajun chicken pasta|30|pasta chicken-breast cream paprika garlic|cayenne bell-pepper parmesan|Rub chicken with paprika, cayenne, garlic powder and salt; fry and slice.; Fry peppers, add cream and simmer.; Toss with pasta and the chicken.
+D|Baked feta pasta|40|pasta feta tomato garlic olive-oil|basil chili-flakes|Heat oven to 200°C. Put cherry tomatoes and garlic in a dish with the block of feta in the middle, drizzle with oil.; Bake 30 min.; Mash everything together and stir in the cooked pasta.
+D|Zucchini and lemon pasta|20|pasta zucchini garlic lemon|parmesan chili-flakes basil|Cook the pasta.; Fry grated or sliced zucchini with garlic until soft.; Toss with pasta, lemon zest and juice and parmesan.
+D|Broccoli and garlic pasta|20|pasta broccoli garlic|chili-flakes parmesan lemon|Cook the pasta, adding broccoli for the last 4 min.; Fry garlic and chili in olive oil.; Toss everything with parmesan and pasta water, mashing some broccoli into a sauce.
+D|Sausage and tomato pasta|25|pasta sausage tomatoes-can onion garlic|chili-flakes cream|Squeeze the sausage meat out of the skins and brown it.; Add onion and garlic, then tomatoes; simmer 10 min.; Toss with pasta.
+D|Chorizo pasta|20|pasta chorizo tomatoes-can garlic|spinach cream|Fry sliced chorizo until the oil runs.; Add garlic and tomatoes, simmer 10 min.; Toss with pasta.
+D|Tuna pasta bake|40|pasta tuna tomatoes-can cheese|corn onion|Heat oven to 200°C. Cook the pasta for 2 min less than the packet says.; Mix with tomatoes, tuna and corn in a dish.; Top with cheese and bake 20 min.
+D|Classic lasagne|90|lasagne mince tomatoes-can onion garlic milk butter flour cheese|carrots oregano|Make a meat sauce: brown mince with onion and garlic, add tomatoes and oregano, simmer 30 min.; Make white sauce: 50 g butter, 50 g flour, 7 dl milk, cooked until thick.; Layer sheets, meat sauce and white sauce, finish with cheese.; Bake 40 min at 200°C.
+D|Lentil lasagne|90|lasagne red-lentils tomatoes-can onion garlic milk butter flour cheese|carrots oregano|Simmer lentils with onion, garlic, tomatoes and a little water for 20 min.; Make a white sauce with butter, flour and milk.; Layer, top with cheese and bake 40 min at 200°C.
+D|Spinach and ricotta-style lasagne|80|lasagne spinach cottage-cheese tomatoes-can mozzarella garlic|nutmeg parmesan|Mix thawed, squeezed spinach with cottage cheese, garlic and nutmeg.; Layer sheets, tomato sauce and the spinach mix.; Top with mozzarella and bake 40 min at 200°C.
+D|Pasta e fagioli|35|pasta beans tomatoes-can onion garlic stock|rosemary parmesan carrots|Soften onion and garlic, add tomatoes, beans and stock.; Simmer 10 min, mash a few beans to thicken.; Add small pasta and cook until tender.
+D|Pasta e ceci|35|pasta chickpeas tomato-paste garlic stock|rosemary chili-flakes parmesan|Fry garlic and rosemary, stir in tomato paste.; Add chickpeas and stock, simmer 10 min and mash some.; Cook small pasta in the pot until thick and stewy.
+D|One-pot tomato pasta|25|pasta tomatoes-can onion garlic stock|basil parmesan spinach|Put pasta, tomatoes, sliced onion, garlic and stock in a wide pot.; Boil, stirring often, for about 10–12 min until the pasta is cooked and the sauce thick.; Finish with basil and parmesan.
+D|Lentil bolognese|45|pasta red-lentils tomatoes-can tomato-paste onion garlic|carrots oregano parmesan|Soften onion, garlic and carrot, add tomato paste.; Add lentils, tomatoes and 4 dl water, simmer 25 min.; Serve with pasta.
+D|Ham and pea pasta|20|pasta ham peas cream|parmesan onion|Cook the pasta with peas for the last 2 min.; Warm diced ham in cream.; Toss with pasta and parmesan.
+D|Pasta with peas and bacon|20|pasta bacon peas|parmesan cream|Fry bacon until crisp.; Cook pasta with peas.; Toss with the bacon fat, parmesan and pasta water.
+D|Pasta primavera|25|pasta zucchini peas broccoli garlic|parmesan lemon cream|Cook pasta, adding broccoli and peas at the end.; Fry zucchini and garlic.; Toss everything with parmesan and lemon.
+D|Pasta alla Norma (eggplant)|40|pasta eggplant tomatoes-can garlic|basil feta chili-flakes|Fry cubed eggplant in plenty of oil until golden.; Add garlic and tomatoes, simmer 10 min.; Toss with pasta and crumble feta on top.
+D|Cauliflower and cheese pasta|30|pasta cauliflower cheese milk butter flour|mustard|Cook pasta with small cauliflower florets.; Make a cheese sauce: butter, flour, milk, then cheese and a little mustard.; Mix and serve, or grill until golden.
+D|Garlic butter pasta|15|pasta garlic butter|parmesan parsley chili-flakes|Cook the pasta.; Melt butter with lots of sliced garlic over low heat.; Toss with pasta, parmesan and pasta water.
+D|Creamy spinach pasta|20|pasta spinach cream garlic|parmesan nutmeg|Cook the pasta.; Wilt spinach with garlic, add cream and nutmeg.; Toss with pasta and parmesan.
+D|Pasta salad with pesto and tomato|20|pasta pesto tomato|mozzarella olives basil|Cook and cool the pasta.; Toss with pesto, halved tomatoes and mozzarella.; Serve cold or at room temperature.
+D|Gnocchi in tomato sauce|20|gnocchi tomatoes-can garlic|mozzarella basil parmesan|Simmer garlic and tomatoes 10 min.; Boil gnocchi until they float.; Toss in the sauce; top with mozzarella and grill if you like.
+D|Gnocchi with pesto|15|gnocchi pesto|parmesan tomato peas|Boil or pan-fry the gnocchi until golden.; Toss with pesto and parmesan.
+D|Brown butter sage-style gnocchi|15|gnocchi butter parmesan|garlic lemon|Pan-fry gnocchi in oil until golden.; Add butter and cook until it smells nutty.; Finish with parmesan and lemon.
+D|Creamy spinach gnocchi|20|gnocchi spinach cream garlic|parmesan bacon|Pan-fry gnocchi until golden.; Add garlic, spinach and cream; simmer 2 min.; Top with parmesan.
+D|Gnocchi bake with sausage|35|gnocchi sausage tomatoes-can mozzarella|onion garlic oregano|Brown the sausage pieces with onion.; Add tomatoes and simmer 5 min, stir in raw gnocchi.; Top with mozzarella and bake 20 min at 200°C.
+D|Sheet-pan gnocchi with vegetables|35|gnocchi zucchini bell-pepper red-onion|feta pesto|Heat oven to 220°C.; Toss gnocchi and chopped vegetables with oil and salt on a tray.; Roast 25 min, turning once; top with feta or pesto.
+D|Peanut noodles|15|noodles peanut-butter soy garlic|lime sriracha spring-onion sesame-seeds|Cook the noodles.; Whisk peanut butter, soy, garlic, lime and hot water into a sauce.; Toss with noodles and top with spring onion.
+D|Sesame noodles|15|noodles sesame-oil soy garlic|rice-vinegar honey chili-flakes spring-onion|Cook the noodles.; Mix sesame oil, soy, vinegar, honey and garlic.; Toss and top with spring onion and sesame seeds.
+D|Simple pad thai|30|rice-noodles eggs fish-sauce lime nuts|shrimp tofu spring-onion brown-sugar|Soak the rice noodles.; Mix fish sauce, lime juice and sugar.; Stir-fry shrimp or tofu, push aside and scramble the eggs.; Add noodles and sauce, toss, top with chopped peanuts.
+D|Chicken chow mein|25|noodles chicken soy oyster-sauce cabbage|carrots spring-onion garlic|Cook the noodles.; Stir-fry sliced chicken, then cabbage and carrots.; Add noodles, soy and oyster sauce, toss on high heat.
+D|Beef chow mein|25|noodles beef soy oyster-sauce|cabbage carrots spring-onion|Cook the noodles.; Sear thin beef strips hot, then vegetables.; Toss with noodles and sauces.
+D|Vegetable lo mein|20|noodles soy garlic broccoli|carrots mushrooms sesame-oil|Cook the noodles.; Stir-fry vegetables with garlic.; Toss with noodles, soy and sesame oil.
+D|Teriyaki chicken|25|chicken soy honey garlic rice|ginger sesame-seeds broccoli|Cook the rice.; Fry chicken thighs until browned.; Add soy, honey, garlic and ginger, simmer until sticky.
+D|Teriyaki salmon|20|salmon soy honey rice|ginger garlic sesame-seeds|Cook the rice.; Fry salmon skin-side down until crisp, flip.; Add soy and honey and spoon over until glazed.
+D|Teriyaki tofu|25|tofu soy honey cornstarch rice|garlic ginger broccoli|Press and cube the tofu, toss in cornstarch and fry until crisp.; Add soy, honey and garlic; glaze.; Serve with rice.
+D|Sweet and sour chicken|30|chicken pineapple ketchup vinegar sugar rice|bell-pepper onion cornstarch|Cook the rice.; Fry chicken pieces, then pepper and onion.; Add pineapple, ketchup, vinegar, sugar and a little juice; thicken with cornstarch.
+D|Sweet and sour pork|30|pork pineapple ketchup vinegar sugar rice|bell-pepper onion cornstarch|Toss pork pieces in cornstarch and fry until crisp.; Fry pepper and onion, add pineapple and the sauce ingredients.; Toss the pork back in and serve with rice.
+D|Kung pao chicken|25|chicken soy vinegar nuts chili-flakes rice|garlic ginger spring-onion honey|Cook the rice.; Stir-fry chicken, then garlic, ginger and chili.; Add soy, vinegar and honey; toss in peanuts.
+D|Garlic shrimp stir-fry|15|shrimp garlic soy broccoli rice|ginger oyster-sauce|Cook the rice.; Stir-fry broccoli, add shrimp and garlic.; Season with soy and oyster sauce.
+D|Beef and broccoli|25|beef broccoli soy oyster-sauce garlic rice|ginger cornstarch|Toss beef strips with soy and cornstarch, sear hot.; Stir-fry broccoli with garlic.; Return beef, add oyster sauce and a splash of water.
+D|Ginger pork stir-fry|20|pork ginger soy garlic rice|spring-onion cabbage honey|Stir-fry thin pork slices hot.; Add lots of grated ginger and garlic.; Add soy and honey, serve with rice.
+D|Tofu and vegetable stir-fry|20|tofu soy broccoli garlic rice|bell-pepper carrots sesame-oil|Fry cubed tofu until golden.; Stir-fry the vegetables with garlic.; Toss with soy and sesame oil.
+D|Crispy sweet chili tofu|25|tofu cornstarch sweet-chili rice|spring-onion sesame-seeds|Toss tofu cubes in cornstarch, fry until crisp.; Toss in sweet chili sauce.; Serve with rice.
+D|Thai red curry chicken|30|chicken curry-paste coconut-milk rice|bell-pepper fish-sauce lime basil|Fry 2–3 tbsp curry paste in oil.; Add chicken, then coconut milk; simmer 15 min.; Season with fish sauce and lime.
+D|Thai green curry|30|chicken curry-paste coconut-milk rice|zucchini green-beans fish-sauce basil lime|Fry green curry paste, add chicken.; Pour in coconut milk and vegetables, simmer 15 min.; Season with fish sauce and lime.
+D|Red curry shrimp|20|shrimp curry-paste coconut-milk rice|bell-pepper lime fish-sauce|Fry curry paste, add coconut milk and simmer 5 min.; Add shrimp and peppers, cook 3–4 min.; Finish with lime.
+D|Red curry tofu with vegetables|25|tofu curry-paste coconut-milk rice|broccoli bell-pepper lime|Fry tofu until golden.; Fry curry paste, add coconut milk and vegetables.; Simmer 10 min with the tofu.
+D|Thai basil chicken|20|mince garlic fresh-chili soy fish-sauce rice|basil eggs oyster-sauce|Fry garlic and chili, add chicken or pork mince.; Season with soy, fish sauce and oyster sauce.; Stir in basil; serve with rice and a fried egg.
+D|Chicken satay with peanut sauce|30|chicken peanut-butter soy coconut-milk rice|lime curry garlic|Thread or fry chicken pieces seasoned with soy and curry powder.; Simmer peanut butter, coconut milk, soy and lime into a sauce.; Serve with rice.
+D|Chicken fried rice|20|rice chicken eggs soy|peas spring-onion garlic|Use cold cooked rice.; Fry chicken, push aside, scramble eggs.; Add rice and peas, season with soy.
+D|Shrimp fried rice|20|rice shrimp eggs soy|peas garlic spring-onion|Use cold cooked rice.; Fry shrimp, set aside, scramble eggs.; Fry rice hot, add shrimp, peas and soy.
+D|Pineapple fried rice|20|rice pineapple eggs soy|ham nuts curry spring-onion|Use cold cooked rice.; Scramble eggs, add rice and curry powder.; Add pineapple and ham, season with soy.
+D|Korean beef bowl|20|mince soy brown-sugar garlic rice|ginger sesame-oil spring-onion|Cook the rice.; Brown mince with garlic and ginger.; Add soy, sugar and sesame oil; serve over rice.
+D|Bibimbap-style rice bowl|30|rice eggs spinach carrots soy|mince sesame-oil sriracha|Cook rice. Sauté spinach and carrots separately.; Fry an egg each.; Top the rice with vegetables, mince if using, egg and sriracha.
+D|Honey garlic chicken|25|chicken honey garlic soy rice|butter sesame-seeds|Brown chicken pieces.; Add garlic, then honey and soy; simmer until sticky.; Serve with rice.
+D|Sesame chicken|30|chicken cornstarch soy honey sesame-seeds rice|garlic|Toss chicken in cornstarch and fry until crisp.; Simmer soy, honey and garlic.; Toss chicken in the sauce and sesame seeds.
+D|Orange chicken|30|chicken oranges soy cornstarch rice|garlic ginger sugar|Toss chicken in cornstarch, fry crisp.; Simmer orange juice and zest, soy, sugar, garlic; thicken.; Toss the chicken through.
+D|Mapo-style tofu with mince|25|tofu mince garlic chili-flakes soy rice|ginger spring-onion cornstarch|Brown mince with garlic, ginger and chili.; Add soy, water and cubed tofu; simmer 5 min.; Thicken lightly and serve with rice.
+D|Dan dan-style noodles|25|noodles mince soy peanut-butter garlic|chili-flakes sesame-oil spring-onion|Fry mince until crisp with garlic and soy.; Mix peanut butter, soy, chili oil and noodle water.; Toss noodles in the sauce, top with mince.
+D|Chicken katsu curry|40|chicken-breast breadcrumbs flour eggs curry rice|onion carrots honey|Flatten chicken, coat in flour, egg and breadcrumbs; fry until golden.; Soften onion and carrot, add curry powder, flour and stock-water; simmer to a sauce.; Slice the chicken over rice with the sauce.
+D|Japanese-style curry|45|chicken potato carrots onion curry flour butter rice|honey soy|Brown chicken, onion, potato and carrot.; Add water and simmer 20 min.; Make a roux of butter, flour and curry powder, stir in to thicken; serve with rice.
+D|Yakisoba|20|noodles cabbage pork soy worcestershire|carrots ketchup|Fry pork slices, add cabbage and carrots.; Add cooked noodles.; Season with soy, worcestershire and a little ketchup.
+D|Singapore noodles|25|rice-noodles curry eggs shrimp|chicken bell-pepper soy spring-onion|Soak rice noodles.; Stir-fry shrimp and vegetables, push aside and scramble eggs.; Add noodles, curry powder and soy, toss well.
+D|Vietnamese noodle bowl|25|rice-noodles fish-sauce lime cucumber carrots|chicken cilantro nuts sugar|Cook noodles and cool.; Mix fish sauce, lime, sugar and water.; Top noodles with veg, cooked chicken or pork, herbs and peanuts; pour over the dressing.
+D|Thai peanut chicken bowl|25|chicken peanut-butter soy rice|lime cabbage carrots cilantro|Cook rice and fry chicken.; Thin peanut butter with soy, lime and hot water.; Assemble bowls with veg and sauce.
+D|Five-spice pork with rice|30|pork five-spice soy honey rice|garlic broccoli|Rub pork with five-spice, salt and honey.; Sear, then roast or pan-cook until done.; Slice and serve with rice and greens.
+D|Egg and tomato stir-fry|15|eggs tomato rice|spring-onion soy sugar|Scramble eggs softly, set aside.; Fry tomato wedges until juicy with a pinch of sugar.; Return eggs and serve over rice.
+D|Ginger soy salmon with noodles|20|salmon noodles soy ginger|honey spring-onion broccoli|Pan-fry salmon.; Add soy, ginger and honey to glaze.; Serve with noodles and greens.
+D|Chicken lettuce wraps|20|mince lettuce soy garlic|ginger honey spring-onion|Brown mince with garlic and ginger.; Season with soy and honey.; Spoon into lettuce leaves.
+D|Coconut lentil dal with spinach|30|red-lentils coconut-milk onion garlic curry spinach|ginger lime rice|Soften onion, garlic and ginger, add curry powder.; Add lentils, coconut milk and 4 dl water, simmer 20 min.; Stir in spinach.
+D|Prawn laksa-style noodle curry|30|noodles shrimp curry-paste coconut-milk stock|lime fish-sauce spring-onion|Fry curry paste, add coconut milk and stock.; Simmer 5 min, add shrimp.; Pour over noodles.
+D|Chicken and cashew stir-fry|20|chicken nuts soy garlic rice|bell-pepper oyster-sauce|Stir-fry chicken, then peppers.; Add garlic, soy, oyster sauce.; Toss with toasted nuts.
+D|Crispy pork belly-style bites|45|pork five-spice soy honey rice|garlic|Cut pork into chunks, rub with five-spice and salt.; Roast at 220°C for 30 min.; Toss in soy and honey, serve with rice.
+D|Steamed fish with ginger and soy|20|fish ginger soy rice|spring-onion sesame-oil|Put fish on a plate, top with ginger.; Steam or bake covered for 8–10 min.; Pour over soy and hot oil.
+D|Udon-style noodle stir-fry with beef|20|noodles beef soy spring-onion|mushrooms garlic|Sear beef strips.; Add mushrooms, garlic and noodles.; Season with soy.
+D|Tofu satay noodles|20|noodles tofu peanut-butter soy|lime broccoli|Fry tofu cubes.; Mix peanut sauce with soy, lime and water.; Toss noodles, tofu and sauce.
+D|Chicken teriyaki rice bowl|25|chicken soy honey rice cucumber|avocado sesame-seeds|Cook rice; make teriyaki chicken with soy and honey.; Slice cucumber and avocado.; Assemble bowls.
+D|Salmon poke-style bowl|20|salmon rice soy cucumber|avocado sesame-seeds spring-onion|Cook rice and cool slightly.; Cube fresh salmon (or cooked) and toss with soy and sesame oil.; Top rice with salmon, cucumber and avocado.
+D|Spicy shrimp noodles|15|noodles shrimp garlic sriracha soy|lime spring-onion|Cook noodles.; Fry shrimp and garlic.; Toss with sriracha, soy and lime.
+D|Mongolian beef|25|beef soy brown-sugar garlic cornstarch rice|ginger spring-onion|Coat beef in cornstarch and fry crisp.; Simmer soy, sugar, garlic and ginger.; Toss beef through.
+D|Cashew vegetable curry|30|nuts coconut-milk curry onion broccoli rice|cauliflower garlic|Soften onion, add curry powder.; Add coconut milk and vegetables, simmer 15 min.; Stir in toasted nuts.
+D|Vegetable fried noodles|15|noodles eggs soy cabbage|carrots spring-onion|Scramble eggs, set aside.; Stir-fry cabbage and carrots.; Add noodles, eggs and soy.
+D|Thai fish cakes with sweet chili|30|fish curry-paste eggs sweet-chili|green-beans lime|Blend fish with curry paste and egg.; Shape small cakes and fry until golden.; Serve with sweet chili sauce.
+D|Sticky chicken drumsticks|45|chicken soy honey ketchup garlic|five-spice sesame-seeds|Mix soy, honey, ketchup and garlic.; Toss chicken in it and roast at 200°C for 35–40 min, basting.; Serve with rice.
+D|Coconut rice with peanut chicken|30|rice coconut-milk chicken peanut-butter soy|lime cilantro|Cook rice in coconut milk and water.; Fry chicken; toss with peanut butter, soy and lime.; Serve together.
+D|Butter chicken|40|chicken tomatoes-can cream butter garlic garam-masala rice|ginger yogurt cumin|Marinate chicken in yogurt and garam masala if you have time.; Brown the chicken in butter.; Add garlic, ginger, spices and tomatoes, simmer 15 min.; Stir in cream; serve with rice.
+D|Chicken tikka masala|45|chicken yogurt tomatoes-can onion garlic garam-masala cream rice|ginger cumin paprika|Marinate chicken in yogurt and spices, then grill or fry until charred.; Soften onion, garlic and ginger, add spices and tomatoes, simmer 15 min.; Add cream and the chicken.
+D|Chicken korma|40|chicken onion garlic coconut-milk curry nuts rice|cream ginger|Soften onion with garlic and ginger.; Add chicken and curry powder, then coconut milk and ground nuts.; Simmer 20 min until mild and creamy.
+D|Simple chicken curry|40|chicken onion garlic tomatoes-can curry rice|ginger yogurt coriander|Fry onion until golden, add garlic, ginger and curry powder.; Add chicken and tomatoes, simmer 25 min.; Stir in yogurt off the heat.
+D|Lamb curry|90|lamb onion garlic tomatoes-can curry rice|ginger yogurt garam-masala|Brown lamb cubes in batches.; Fry onion, garlic, ginger and spices.; Add tomatoes and water, simmer covered 1 hour until tender.
+D|Lamb rogan josh|90|lamb onion garlic yogurt paprika garam-masala rice|ginger cardamom tomato-paste|Brown the lamb.; Fry onion, garlic, ginger, paprika and spices with tomato paste.; Add yogurt and water, simmer 1 hour.
+D|Beef curry|100|beef onion garlic tomatoes-can curry rice|ginger potato coconut-milk|Brown cubed beef.; Fry onion, garlic and curry powder.; Add tomatoes and water, simmer 1.5 hours, adding potatoes for the last 30 min.
+D|Keema (spiced mince with peas)|30|mince peas onion garlic curry tomatoes-can|ginger garam-masala rice pita|Brown mince with onion, garlic and ginger.; Add curry powder and tomatoes, simmer 15 min.; Stir in peas; serve with rice or flatbread.
+D|Chana masala|35|chickpeas onion garlic tomatoes-can garam-masala|ginger cumin lemon rice|Fry onion until golden, add garlic, ginger and spices.; Add tomatoes and chickpeas, simmer 20 min.; Finish with lemon.
+D|Dal tadka|35|red-lentils onion garlic cumin turmeric|tomato ginger chili-flakes rice|Simmer lentils with turmeric in water for 20 min.; Fry cumin, onion, garlic and chili in oil until golden.; Pour this over the lentils.
+D|Spinach and chickpea curry|30|chickpeas spinach onion garlic curry tomatoes-can|coconut-milk ginger rice|Soften onion, garlic and ginger with curry powder.; Add tomatoes and chickpeas, simmer 15 min.; Stir in spinach.
+D|Aloo gobi (potato and cauliflower)|40|potato cauliflower onion turmeric cumin|garlic ginger tomato garam-masala|Fry onion with cumin and turmeric.; Add potato and cauliflower with a splash of water, cover and cook 20 min.; Season and finish with garam masala.
+D|Cauliflower and chickpea curry|35|cauliflower chickpeas coconut-milk curry onion|garlic spinach rice|Soften onion and curry powder.; Add cauliflower, chickpeas and coconut milk, simmer 20 min.; Serve with rice.
+D|Sweet potato curry|35|sweet-potato coconut-milk curry onion garlic|spinach chickpeas lime rice|Fry onion, garlic and curry.; Add cubed sweet potato and coconut milk, simmer 20 min.; Stir in spinach and lime.
+D|Egg curry|30|eggs onion garlic tomatoes-can curry|ginger coconut-milk rice|Hard-boil and peel the eggs.; Make a sauce of onion, garlic, curry and tomatoes, simmer 10 min.; Add halved eggs and warm through.
+D|Fish curry with coconut|25|fish coconut-milk curry onion garlic|tomato lime cilantro rice|Fry onion, garlic and curry powder.; Add coconut milk and simmer 5 min.; Add fish chunks and cook 5 min gently.
+D|Vegetable korma|35|potato carrots peas coconut-milk curry onion|cauliflower nuts rice|Soften onion and curry powder.; Add vegetables and coconut milk, simmer 20 min.; Stir in ground nuts.
+D|Mushroom curry|25|mushrooms onion garlic curry tomatoes-can|cream peas rice|Fry mushrooms until browned.; Add onion, garlic and curry powder.; Add tomatoes and simmer 10 min, finish with cream.
+D|Chicken biryani|60|chicken rice onion yogurt garam-masala|garlic ginger raisins nuts cardamom|Marinate chicken in yogurt and spices.; Fry sliced onions until dark golden.; Layer chicken, half-cooked rice and onions in a pot, cover tightly and cook on low 25 min.
+D|Vegetable biryani|50|rice onion carrots peas garam-masala|cauliflower raisins nuts yogurt|Fry onion until golden, add spices and vegetables.; Add rinsed rice and water, cover and cook 15 min.; Rest 5 min and fluff up.
+D|Tandoori chicken|45|chicken yogurt paprika garam-masala garlic lemon|ginger cumin rice|Mix yogurt, lemon, garlic and spices.; Coat chicken and marinate at least 1 hour.; Roast at 220°C for 30 min.
+D|Saag aloo|30|potato spinach onion garlic cumin|ginger turmeric chili-flakes|Parboil cubed potatoes.; Fry onion, garlic and spices, add potatoes and brown them.; Stir in spinach until wilted.
+D|Chickpea and potato curry|35|chickpeas potato onion curry tomatoes-can|spinach coconut-milk rice|Fry onion and curry powder.; Add potatoes, tomatoes and water, simmer 15 min.; Add chickpeas and cook 10 min more.
+D|Taco night (Norwegian taco)|25|mince taco-spice tortillas cheese|lettuce tomato cucumber corn sour-cream salsa|Brown mince, add taco spice and a little water.; Chop vegetables and grate cheese.; Warm tortillas and let everyone build their own.
+D|Chicken tacos|25|chicken taco-spice tortillas|lime avocado salsa sour-cream lettuce|Fry chicken with taco spice.; Warm tortillas.; Fill with chicken and toppings.
+D|Fish tacos|25|fish tortillas lime cabbage|sour-cream avocado paprika cumin|Season fish with paprika, cumin and salt, fry.; Slice cabbage and mix with lime.; Fill tortillas with fish, slaw and sour cream.
+D|Shrimp tacos|20|shrimp tortillas lime garlic|avocado cabbage sour-cream chili-flakes|Fry shrimp with garlic and chili.; Warm tortillas.; Fill with shrimp, slaw and avocado.
+D|Bean tacos|20|beans taco-spice tortillas|cheese avocado salsa sour-cream|Fry beans with taco spice and a splash of water, mash a little.; Warm tortillas.; Fill with beans and toppings.
+D|Burritos|30|tortillas rice beans cheese|mince chicken salsa sour-cream taco-spice|Cook rice and warm seasoned beans or meat.; Fill large tortillas with rice, filling and cheese.; Roll tightly and toast in a pan.
+D|Burrito bowl|30|rice beans corn|chicken salsa avocado sour-cream cheese lime|Cook rice and season with lime.; Warm beans and corn, cook chicken if using.; Assemble bowls with toppings.
+D|Chicken fajitas|25|chicken bell-pepper onion tortillas paprika cumin|lime sour-cream cheese|Slice chicken, peppers and onion.; Fry with paprika, cumin and salt on high heat.; Serve in warm tortillas.
+D|Beef fajitas|25|beef bell-pepper onion tortillas paprika cumin|lime sour-cream avocado|Sear thin beef strips.; Fry peppers and onions with spices.; Serve in tortillas.
+D|Chicken quesadillas|20|tortillas chicken cheese|bell-pepper salsa sour-cream|Top a tortilla with cheese and cooked chicken, cover with another.; Fry until golden on both sides.; Cut into wedges.
+D|Bean and cheese quesadillas|15|tortillas beans cheese|corn salsa|Mash beans with a little cumin.; Spread on tortillas, add cheese and fold.; Fry until crisp.
+D|Chicken enchiladas|45|tortillas chicken tomatoes-can cheese taco-spice|sour-cream onion beans|Mix cooked chicken with a little sauce.; Fill and roll tortillas, place in a dish.; Pour over spiced tomatoes, top with cheese and bake 20 min at 200°C.
+D|Bean enchiladas|45|tortillas beans tomatoes-can cheese taco-spice|corn sour-cream|Fill tortillas with spiced beans and corn.; Cover with tomato sauce and cheese.; Bake 20 min at 200°C.
+D|Chili sin carne|40|beans red-lentils tomatoes-can onion garlic cumin paprika|corn bell-pepper chili-flakes rice|Soften onion and garlic with the spices.; Add tomatoes, beans, lentils and water.; Simmer 25 min.
+D|White chicken chili|40|chicken white-beans onion garlic stock cumin|corn cream-cheese fresh-chili lime|Soften onion and garlic with cumin.; Add stock, beans and chicken, simmer 20 min.; Shred the chicken and stir in cream cheese.
+D|Sweet potato and bean chili|45|sweet-potato beans tomatoes-can onion cumin paprika|garlic corn lime|Fry onion with spices.; Add cubed sweet potato, tomatoes and beans.; Simmer 30 min until tender.
+D|Mexican rice|30|rice tomato-paste onion garlic stock|cumin peas corn|Fry rice in oil until lightly toasted.; Add onion, garlic and tomato paste.; Add stock, cover and cook 18 min.
+D|Chicken taco bowl|25|chicken taco-spice rice beans|corn avocado salsa sour-cream|Cook rice.; Fry chicken with taco spice.; Assemble with beans and toppings.
+D|Stuffed peppers Mexican-style|45|bell-pepper mince rice tomatoes-can cheese taco-spice|beans corn|Halve and seed peppers.; Mix browned spiced mince with cooked rice and tomatoes.; Fill, top with cheese and bake 25 min at 200°C.
+D|Taco lasagne|50|tortillas mince taco-spice tomatoes-can cheese|beans corn sour-cream|Brown mince with taco spice and tomatoes.; Layer tortillas, meat and cheese in a dish.; Bake 25 min at 200°C.
+D|Tortilla pizza|15|tortillas tomato-paste cheese|ham mushrooms oregano|Spread tomato paste on a tortilla, add toppings and cheese.; Bake at 220°C for 8–10 min until crisp.
+D|Chicken and chorizo jambalaya|45|rice chicken chorizo onion bell-pepper tomatoes-can stock|shrimp paprika celery garlic|Brown chicken and chorizo.; Soften onion, pepper and celery.; Add rice, tomatoes and stock, cover and cook 20 min.
+D|Meatballs in brown sauce (kjøttkaker)|50|mince onion eggs breadcrumbs flour butter stock potato|nutmeg cabbage peas|Mix mince, grated onion, egg, breadcrumbs, salt and nutmeg; shape patties.; Brown in butter.; Make a brown sauce with butter, flour and stock, simmer the patties 15 min.; Serve with boiled potatoes.
+D|Karbonader with onions|30|mince onion potato butter|eggs breadcrumbs stock|Shape mince into flat patties, season.; Fry in butter, then fry sliced onion in the pan.; Add a splash of stock to make a sauce; serve with potatoes.
+D|Fårikål (lamb and cabbage)|150|lamb cabbage potato|pepper|Layer lamb pieces and cabbage wedges in a pot, sprinkle salt and whole peppercorns between layers.; Add about 3 dl water.; Simmer covered 2–2.5 hours until tender; serve with potatoes.
+D|Brown lapskaus (stew)|90|beef potato carrots onion swede stock|bay thyme|Brown cubed meat and onion.; Add stock and simmer 45 min.; Add diced potato, carrot and swede; cook until the potatoes start to break up.
+D|Fiskegrateng (fish au gratin)|60|cod butter flour milk pasta cheese|eggs nutmeg breadcrumbs|Make a white sauce with butter, flour and milk; add egg yolks and nutmeg.; Mix with cooked macaroni and flaked fish.; Top with cheese and breadcrumbs and bake 30 min at 200°C.
+D|Homemade fish cakes (fiskekaker)|30|cod eggs cornstarch milk onion|nutmeg potato carrots|Blend fish with salt, then egg, cornstarch and cold milk.; Shape into cakes with wet hands.; Fry in butter until golden; serve with potatoes and grated carrots.
+D|Plukkfisk|35|cod potato milk butter|leek bacon|Boil potatoes and poach the fish.; Melt butter, add milk, then the flaked fish and potatoes; mash roughly.; Top with crispy bacon.
+D|Baked salmon with potatoes and cucumber salad|35|salmon potato cucumber vinegar sugar|dill sour-cream lemon|Boil potatoes.; Bake salmon at 200°C for 12–15 min.; Slice cucumber thin and dress with vinegar, sugar and water.
+D|Cod with bacon and butter|30|cod bacon butter potato|carrots peas|Boil potatoes.; Fry or poach the cod.; Fry bacon crisp, melt in butter and pour over the fish.
+D|Cod with Sandefjord butter|30|cod cream butter lemon potato|parsley|Poach the cod gently.; Boil cream until reduced, whisk in cold butter off the heat with lemon.; Serve with potatoes and parsley.
+D|Pølse i lompe (hot dogs)|15|sausage|ketchup mustard onion|Heat sausages in hot water or fry.; Serve in buns, lompe or tortillas with toppings.
+D|Pyttipanne|30|potato onion sausage|ham eggs beetroot|Fry diced potatoes until golden and cooked.; Add onion and diced meat.; Serve with a fried egg.
+D|Creamy chicken stew (kyllinggryte)|35|chicken onion bell-pepper cream paprika|garlic tomato-paste rice|Brown chicken with onion and pepper.; Add paprika and tomato paste.; Pour in cream, simmer 15 min; serve with rice.
+D|Sausage stroganoff (pølsestroganoff)|25|sausage onion tomato-paste cream paprika rice|ketchup|Slice sausages and fry with onion.; Stir in paprika and tomato paste.; Add cream, simmer 5 min, serve with rice.
+D|Beef stroganoff|30|beef onion mushrooms sour-cream mustard|paprika rice pasta|Sear beef strips hot, set aside.; Fry onion and mushrooms.; Add mustard and sour cream, return beef; serve with rice or pasta.
+D|Sausage stew (pølsegryte)|30|sausage tomatoes-can onion potato|bell-pepper paprika|Fry sausages and onion.; Add tomatoes, diced potato and water.; Simmer 20 min.
+D|Swedish meatballs|40|mince onion breadcrumbs eggs cream stock potato|jam nutmeg|Mix mince, onion, breadcrumbs and egg; roll small balls and fry.; Make a sauce with stock and cream.; Serve with mashed potatoes and lingonberry jam.
+D|Meatloaf (kjøttpudding)|70|mince onion eggs breadcrumbs ketchup|bacon worcestershire potato|Mix mince, onion, egg, breadcrumbs and seasonings.; Shape a loaf, brush with ketchup.; Bake 50 min at 180°C.
+D|Cabbage rolls|70|cabbage mince rice onion tomatoes-can|cream|Blanch cabbage leaves.; Fill with mince, cooked rice and onion and roll up.; Bake in tomato sauce 40 min at 180°C.
+D|Mushroom risotto|35|rice mushrooms onion stock parmesan butter|garlic thyme|Fry mushrooms, set aside.; Soften onion, toast rice, add hot stock a ladle at a time for 18 min.; Stir in mushrooms, butter and parmesan.
+D|Pea and bacon risotto|35|rice peas bacon onion stock parmesan|butter lemon|Fry bacon and onion.; Toast rice, add hot stock gradually for 18 min.; Stir in peas, butter and parmesan.
+D|Lemon risotto|30|rice lemon onion stock parmesan butter|peas parsley|Soften onion, toast rice.; Add stock gradually for 18 min.; Finish with lemon zest, juice, butter and parmesan.
+D|Chicken risotto|40|rice chicken onion stock parmesan|mushrooms spinach butter|Brown chicken pieces, set aside.; Make risotto with onion, rice and stock.; Stir chicken back in with parmesan.
+D|Shrimp risotto|35|rice shrimp onion stock garlic lemon|parmesan peas|Cook risotto with onion, garlic and stock.; Add shrimp for the last 4 min.; Finish with lemon.
+D|Sweet potato risotto|40|rice sweet-potato onion stock parmesan|thyme butter|Roast or simmer diced sweet potato.; Make risotto with onion, rice and stock.; Mash half the sweet potato into the rice, stir in the rest and parmesan.
+D|Easy paella|45|rice chicken chorizo onion bell-pepper paprika stock|shrimp peas lemon turmeric|Brown chicken and chorizo in a wide pan.; Add onion, pepper, paprika and turmeric, then rice.; Add stock and simmer uncovered 20 min; add shrimp and peas near the end.
+D|Spanish chicken and potatoes|50|chicken potato smoked-paprika garlic|chorizo onion lemon olives|Toss chicken and potatoes with paprika, garlic and oil.; Roast at 200°C for 40–45 min.
+D|Spanish tortilla|35|eggs potato onion|bell-pepper|Slowly fry sliced potatoes and onion in plenty of oil until soft.; Mix with beaten eggs.; Cook in a pan on low until set, flip with a plate and finish.
+D|Ratatouille|60|eggplant zucchini bell-pepper tomatoes-can onion garlic|thyme basil|Fry each vegetable until browned.; Combine with onion, garlic and tomatoes.; Simmer 30 min.
+D|Chicken piccata|25|chicken-breast flour lemon capers butter|parsley pasta|Flatten chicken, dust in flour and fry.; Add lemon juice, capers and stock-water; reduce.; Swirl in butter.
+D|Chicken parmigiana|45|chicken-breast breadcrumbs eggs tomatoes-can mozzarella|parmesan pasta basil|Bread and fry the chicken.; Top with tomato sauce and mozzarella.; Bake 15 min at 200°C.
+D|Eggplant parmigiana|70|eggplant tomatoes-can mozzarella parmesan garlic|basil|Slice and fry or roast the eggplant.; Layer with tomato sauce and cheese.; Bake 30 min at 190°C.
+D|Chicken schnitzel|25|chicken-breast flour eggs breadcrumbs lemon|potato|Flatten chicken thin.; Coat in flour, egg and breadcrumbs.; Fry in oil until golden; serve with lemon.
+D|Pork schnitzel|25|pork flour eggs breadcrumbs lemon|potato capers|Pound pork thin.; Coat in flour, egg and breadcrumbs.; Fry until golden.
+D|Beef stew|150|beef onion carrots potato stock tomato-paste flour|thyme bay garlic|Toss beef in flour and brown in batches.; Add onion, tomato paste, stock and herbs.; Simmer 1.5 hours, add potatoes and carrots for the last 45 min.
+D|Beef goulash|120|beef onion paprika tomato-paste stock|bell-pepper potato garlic|Brown beef, then lots of onion.; Stir in paprika and tomato paste.; Add stock and simmer 1.5 hours.
+D|Shepherd's pie|70|lamb onion carrots tomato-paste stock potato butter|worcestershire peas|Brown lamb mince with onion and carrots, add tomato paste and stock, simmer 20 min.; Top with mashed potatoes.; Bake 25 min at 200°C.
+D|Cottage pie|70|mince onion carrots tomato-paste stock potato butter|worcestershire cheese peas|Brown beef mince with vegetables, add tomato paste and stock.; Top with mash and cheese.; Bake 25 min at 200°C.
+D|Fish pie|60|fish potato milk butter flour|shrimp peas eggs cheese|Poach fish in milk; use the milk for a white sauce.; Put fish and sauce in a dish, top with mash.; Bake 30 min at 200°C.
+D|Toad in the hole|50|sausage flour eggs milk|onion|Heat oven to 220°C; brown sausages in a hot oiled dish.; Whisk 140 g flour, 3 eggs and 2 dl milk.; Pour over the sausages and bake 25 min without opening the door.
+D|Bangers and mash with onion gravy|40|sausage potato onion butter stock|milk mustard flour|Fry sausages slowly.; Make mash with butter and milk.; Fry onions dark and add stock and a little flour for gravy.
+D|Chicken pot pie|60|chicken puff-pastry onion carrots peas butter flour stock|milk thyme|Make a sauce with butter, flour and stock, add cooked chicken and vegetables.; Pour into a dish and top with puff pastry.; Bake 30 min at 200°C.
+D|Quiche Lorraine|70|flour butter eggs cream bacon cheese|onion|Rub 200 g flour and 100 g butter, add water to form a dough; line a tin and prebake.; Fill with fried bacon and cheese.; Pour over eggs beaten with cream, bake 30 min at 180°C.
+D|Spinach and feta pie|50|puff-pastry spinach feta eggs|onion dill nutmeg|Mix thawed squeezed spinach, feta and egg.; Spread between layers of puff pastry.; Bake 30 min at 200°C.
+D|Stuffed zucchini|45|zucchini mince tomatoes-can cheese|onion rice|Halve zucchini and scoop out.; Fill with cooked spiced mince and tomato.; Top with cheese, bake 25 min at 200°C.
+D|Moussaka|90|eggplant lamb onion tomatoes-can cinnamon milk butter flour|cheese eggs|Fry eggplant slices.; Cook lamb mince with onion, tomato and cinnamon.; Layer, top with a thick white sauce and bake 40 min at 180°C.
+D|Chicken souvlaki with tzatziki|35|chicken lemon oregano garlic pita yogurt cucumber|tomato red-onion|Marinate chicken in lemon, oregano, garlic and oil, then skewer and grill.; Make tzatziki with grated cucumber, yogurt and garlic.; Serve in pita.
+D|Gyros-style pork pita|30|pork pita yogurt cucumber garlic paprika|tomato red-onion oregano|Slice pork thin and fry with paprika and oregano.; Make tzatziki.; Fill pitas.
+D|Chicken shawarma|35|chicken cumin coriander paprika garlic pita yogurt|lemon cucumber tomato tahini|Toss chicken in spices, garlic and lemon.; Roast or fry until charred.; Serve in pita with yogurt sauce.
+D|Falafel|40|chickpeas onion garlic cumin flour|parsley cilantro pita tahini|Blend drained chickpeas with onion, garlic, herbs and spices; add flour to bind.; Shape small balls.; Fry until crisp; serve in pita.
+D|Green shakshuka|25|eggs spinach zucchini garlic|feta cumin bread|Soften zucchini and garlic, add spinach until wilted.; Make wells and crack in eggs.; Cover until set; top with feta.
+D|Halloumi tray bake|40|halloumi potato zucchini red-onion|bell-pepper lemon oregano|Roast vegetables at 220°C for 25 min.; Add sliced halloumi and roast 10 min more.; Finish with lemon.
+D|Moroccan chickpea stew|40|chickpeas tomatoes-can onion cumin cinnamon couscous|carrots raisins lemon|Fry onion with spices.; Add carrots, tomatoes and chickpeas, simmer 25 min.; Serve with couscous.
+D|Chicken tagine with lemon and olives|60|chicken onion garlic lemon olives cumin couscous|ginger turmeric cinnamon|Brown chicken.; Fry onion, garlic and spices.; Add water, lemon and olives, simmer 40 min; serve with couscous.
+D|Lamb kofta|30|lamb onion cumin coriander garlic|pita yogurt parsley|Mix lamb mince with onion, garlic and spices.; Shape onto skewers or into sausages.; Grill or fry; serve with pita and yogurt.
+D|Homemade pizza margherita|60|flour yeast tomatoes-can mozzarella olive-oil|basil|Make dough: 400 g flour, 1 tsp yeast, 2.5 dl warm water, salt, oil; rise 1 hour.; Stretch thin, top with crushed tomatoes and mozzarella.; Bake as hot as your oven goes for 8–12 min.
+D|Ham and pineapple pizza|60|flour yeast tomatoes-can cheese ham pineapple|oregano|Make the pizza dough and let it rise.; Top with sauce, cheese, ham and pineapple.; Bake hot.
+D|Pepperoni-style chorizo pizza|60|flour yeast tomatoes-can mozzarella chorizo|chili-flakes oregano|Make the dough and let it rise.; Top with sauce, mozzarella and sliced chorizo.; Bake hot.
+D|Calzone|60|flour yeast tomatoes-can mozzarella ham|mushrooms|Make pizza dough.; Fill half the round with sauce, ham and cheese, fold and seal.; Bake 15–18 min at 230°C.
+D|Flatbread pizza with pesto|15|pita pesto mozzarella|tomato spinach|Spread pesto on flatbread.; Top with mozzarella and tomato.; Bake at 220°C for 8 min.
+D|Classic beef burgers|25|mince buns cheese|lettuce tomato onion ketchup mayonnaise|Shape mince into patties, season well.; Fry hot, add cheese at the end.; Build burgers in toasted buns.
+D|Chicken burger|30|chicken-breast buns flour eggs breadcrumbs|lettuce mayonnaise tomato|Bread and fry the chicken.; Toast buns.; Build with lettuce and mayo.
+D|Halloumi burger|20|halloumi buns|lettuce tomato sweet-chili avocado|Fry halloumi slices until golden.; Toast buns.; Build with sweet chili and salad.
+D|Bean burger|35|beans breadcrumbs onion cumin buns|eggs cheese avocado|Mash beans with onion, spice and breadcrumbs.; Shape patties and chill briefly.; Fry and serve in buns.
+D|Salmon burger|30|salmon breadcrumbs eggs buns|lemon dill mayonnaise lettuce|Chop salmon finely, mix with breadcrumbs, egg and lemon.; Shape and fry.; Serve in buns with mayo.
+D|Sheet-pan chicken and vegetables|45|chicken potato carrots onion|garlic rosemary paprika lemon|Toss everything with oil, salt and spices.; Roast at 210°C for 35–40 min.
+D|Sheet-pan sausages and potatoes|45|sausage potato onion|bell-pepper rosemary mustard|Toss potatoes and onions with oil, roast 20 min at 210°C.; Add sausages and roast 20 min more.
+D|Sheet-pan salmon with green beans|25|salmon green-beans lemon|garlic potato|Roast green beans 5 min at 220°C.; Add salmon and lemon slices.; Roast 12 min more.
+D|Loaded baked potatoes|70|potato cheese sour-cream|bacon spring-onion beans|Bake potatoes at 200°C for 60 min.; Split open and fill with butter, cheese and toppings.
+D|Baked potatoes with tuna|70|potato tuna mayonnaise|corn red-onion cheese|Bake potatoes.; Mix tuna with mayo and corn.; Fill the potatoes.
+D|Chicken and rice one-pot|40|chicken rice onion stock|garlic peas paprika lemon|Brown chicken thighs.; Soften onion, add rice and stock.; Put chicken on top, cover and cook 20 min.
+D|Garlic butter steak with potatoes|35|beef butter garlic potato|rosemary thyme|Roast or pan-fry potato cubes.; Sear steak hot, add butter and garlic and baste.; Rest the meat before slicing.
+D|Pork chops with apples|30|pork apples onion|butter thyme cream mustard|Season and sear pork chops.; Fry apple and onion slices in the pan.; Add a splash of cream or water and simmer.
+D|Pork tenderloin with mustard cream|35|pork mustard cream|mushrooms potato|Sear the pork all over, finish in a 180°C oven for 15 min.; Make a sauce with mustard and cream in the pan.; Slice and serve.
+D|Honey mustard chicken|35|chicken honey mustard|garlic potato thyme|Mix honey, mustard and garlic.; Coat chicken and roast at 200°C for 30 min.
+D|Lamb chops with rosemary|25|lamb rosemary garlic|potato lemon|Rub chops with rosemary, garlic and oil.; Fry hot 3 min per side.; Rest and serve.
+D|Lemon herb chicken thighs|45|chicken lemon garlic|thyme rosemary potato|Marinate chicken in lemon, garlic and herbs.; Roast at 210°C for 35 min.
+D|Creamy Tuscan-style chicken|30|chicken-breast cream spinach tomato garlic parmesan|basil|Fry chicken until golden, set aside.; Fry garlic and tomatoes, add cream and parmesan.; Add spinach and the chicken; simmer.
+D|Chicken with mushroom cream sauce|30|chicken mushrooms cream onion|thyme garlic rice|Brown chicken.; Fry mushrooms and onion.; Add cream and simmer with the chicken.
+D|Baked cod with tomatoes and olives|25|cod tomato olives garlic|capers lemon basil|Put cod in a dish with tomatoes, olives and garlic.; Drizzle with oil and bake 15 min at 200°C.
+D|Oven fish and chips|45|fish potato flour eggs breadcrumbs|lemon peas mayonnaise|Roast potato wedges at 220°C for 35 min.; Bread the fish and bake for the last 15 min.; Serve with lemon.
+D|Homemade fish fingers|25|fish flour eggs breadcrumbs|lemon mayonnaise|Cut fish into fingers.; Coat in flour, egg and breadcrumbs.; Fry until golden.
+D|Shrimp scampi|20|shrimp garlic butter lemon pasta|parsley chili-flakes|Cook pasta.; Fry garlic in butter, add shrimp.; Add lemon and toss with pasta.
+D|Gambas al ajillo (garlic shrimp)|15|shrimp garlic olive-oil chili-flakes|bread parsley|Warm lots of sliced garlic and chili in olive oil.; Add shrimp and cook 2–3 min.; Serve with bread.
+D|Chicken and white bean casserole|50|chicken white-beans tomatoes-can onion garlic|sausage rosemary|Brown chicken and sausage.; Add onion, garlic, tomatoes and beans.; Simmer 30 min.
+D|Sloppy joes|25|mince onion ketchup buns|worcestershire mustard bell-pepper|Brown mince with onion.; Add ketchup, mustard and worcestershire, simmer 10 min.; Spoon into buns.
+D|Meatball subs|35|mince breadcrumbs eggs tomatoes-can bread mozzarella|garlic oregano|Make and fry small meatballs.; Simmer in tomato sauce.; Fill rolls and top with mozzarella.
+D|Chicken fricassee|40|chicken onion carrots stock cream flour butter|peas rice lemon|Simmer chicken and vegetables in stock.; Make a sauce with butter, flour, the stock and cream.; Serve with rice.
+D|Honey glazed salmon|20|salmon honey soy garlic|lemon rice|Mix honey, soy and garlic.; Fry salmon and glaze.
+D|Cod in curry cream|25|cod curry cream onion|leek rice|Fry onion and curry.; Add cream and simmer.; Add fish and poach 6 min.
+D|Lamb stew with root vegetables|120|lamb onion carrots potato stock|swede thyme bay|Brown lamb, add onion.; Add stock and herbs, simmer 1 hour.; Add root vegetables and cook 40 min more.
+D|Pork and bean cassoulet-style stew|60|sausage white-beans tomatoes-can onion garlic|bacon thyme breadcrumbs|Brown sausages and bacon.; Add onion, garlic, tomatoes and beans; simmer 30 min.; Top with breadcrumbs and grill.
+D|Chili cheese baked potatoes|70|potato mince beans tomatoes-can cheese|cumin sour-cream|Bake potatoes.; Make a quick chili.; Spoon chili into potatoes and top with cheese.
+D|Mexican stuffed sweet potatoes|60|sweet-potato beans corn cheese|salsa sour-cream avocado|Bake sweet potatoes at 200°C for 45 min.; Warm beans and corn.; Fill and top with cheese.
+S|Tomato soup|30|tomatoes-can onion garlic stock|cream basil butter bread|Soften onion and garlic in butter.; Add tomatoes and stock, simmer 15 min.; Blend smooth, add cream.
+S|Cream of mushroom soup|30|mushrooms onion stock cream|garlic thyme butter|Fry mushrooms and onion in butter.; Add stock, simmer 10 min.; Blend half and stir in cream.
+S|Potato and leek soup|35|potato leek stock butter|cream thyme|Soften sliced leek in butter.; Add potatoes and stock, simmer 20 min.; Blend and season.
+S|Broccoli cheese soup|30|broccoli onion stock cheese|milk butter flour mustard|Soften onion, add broccoli and stock, simmer 15 min.; Blend.; Stir in grated cheese until melted.
+S|Carrot and ginger soup|35|carrots onion ginger stock|coconut-milk oranges cream|Soften onion and ginger.; Add carrots and stock, simmer 20 min.; Blend, add coconut milk.
+S|Sweet potato soup|35|sweet-potato onion stock|coconut-milk curry ginger lime|Soften onion with spices.; Add sweet potato and stock, simmer 20 min.; Blend with coconut milk.
+S|Minestrone|45|tomatoes-can onion carrots celery pasta beans stock|zucchini parmesan garlic|Soften onion, carrot and celery.; Add tomatoes, stock and beans, simmer 15 min.; Add small pasta and cook until tender.
+S|Chicken noodle soup|40|chicken carrots onion celery noodles stock|parsley thyme|Simmer chicken in stock with vegetables for 25 min.; Shred the chicken.; Add noodles and cook until tender.
+S|Chicken and rice soup|45|chicken rice carrots onion stock|celery lemon parsley|Simmer chicken and vegetables in stock.; Add rice and cook 15 min.; Shred the chicken back in, finish with lemon.
+S|Thai coconut chicken soup|25|chicken coconut-milk stock ginger lime fish-sauce|mushrooms fresh-chili cilantro|Simmer stock with ginger.; Add coconut milk and sliced chicken, cook 10 min.; Season with fish sauce and lime.
+S|Spicy coconut shrimp soup|20|shrimp coconut-milk curry-paste stock lime|mushrooms fish-sauce cilantro|Fry curry paste, add stock and coconut milk.; Add shrimp and mushrooms, simmer 4 min.; Season with lime and fish sauce.
+S|Quick ramen|20|noodles stock soy eggs|spring-onion chicken spinach sesame-oil|Simmer stock with soy and a little sesame oil.; Soft-boil eggs for 6.5 min.; Cook noodles in the broth; top with egg and toppings.
+S|Egg drop soup|15|stock eggs cornstarch|soy spring-onion ginger|Bring seasoned stock to a simmer; thicken lightly with cornstarch.; Drizzle in beaten egg while stirring slowly.
+S|French onion soup|70|onion butter stock bread cheese|thyme flour|Cook sliced onions slowly in butter for 40 min until deep brown.; Add stock, simmer 15 min.; Top with toast and cheese and grill.
+S|Green pea soup|20|peas onion stock|cream bacon|Soften onion, add peas and stock.; Simmer 5 min and blend.; Top with crispy bacon or cream.
+S|Spinach soup with egg|25|spinach potato onion stock eggs|cream nutmeg|Simmer potato and onion in stock.; Add spinach and blend.; Serve with halved boiled eggs.
+S|Cauliflower soup|35|cauliflower onion stock|cream cheese nutmeg butter|Soften onion, add cauliflower and stock.; Simmer 20 min, blend.; Stir in cream or cheese.
+S|Norwegian fish soup|35|fish carrots leek stock cream|potato shrimp dill|Simmer julienned vegetables in stock.; Add cream and simmer 5 min.; Add fish and shrimp, cook 4 min.
+S|Kjøttsuppe (meat and root vegetable soup)|120|beef carrots swede potato leek stock|bay|Simmer the meat 1 hour in salted water.; Add diced root vegetables and cook 30 min.; Slice the meat back into the soup.
+S|Taco soup|35|mince taco-spice tomatoes-can beans corn stock|sour-cream cheese tortilla-chips|Brown mince with taco spice.; Add tomatoes, beans, corn and stock.; Simmer 20 min; top with cheese and chips.
+S|Black bean soup|30|beans onion garlic cumin stock|lime sour-cream fresh-chili|Soften onion, garlic and cumin.; Add beans and stock, simmer 15 min.; Blend half and finish with lime.
+S|White bean and spinach soup|30|white-beans spinach onion garlic stock|parmesan rosemary|Soften onion and garlic.; Add beans and stock, simmer 15 min.; Stir in spinach.
+S|Coconut lentil soup|30|red-lentils coconut-milk onion curry stock|lime spinach ginger|Soften onion and curry.; Add lentils, coconut milk and stock.; Simmer 20 min.
+S|Harira-style lentil and chickpea soup|45|red-lentils chickpeas tomatoes-can onion cumin cinnamon|celery lemon cilantro|Soften onion with spices.; Add tomatoes, lentils, chickpeas and water.; Simmer 30 min, finish with lemon.
+S|Mulligatawny|45|chicken red-lentils apples onion curry stock|coconut-milk rice|Soften onion and curry.; Add lentils, apple, chicken and stock, simmer 30 min.; Blend partly.
+S|Gazpacho|15|tomato cucumber bell-pepper garlic olive-oil vinegar|bread red-onion|Blend everything with a splash of water.; Season and chill well.
+S|Chicken tortilla soup|35|chicken tomatoes-can onion stock cumin tortilla-chips|beans corn avocado lime|Simmer onion, tomatoes, cumin and stock with chicken.; Shred the chicken.; Serve topped with crushed chips and avocado.
+S|Hungarian goulash soup|90|beef onion paprika potato stock|bell-pepper tomato-paste|Brown beef and onion with paprika.; Add stock, simmer 1 hour.; Add potatoes and cook 25 min.
+S|Cabbage soup|40|cabbage onion carrots tomatoes-can stock|potato bacon|Soften onion and carrot.; Add cabbage, tomatoes and stock.; Simmer 25 min.
+S|Beetroot soup (borscht)|50|beetroot cabbage potato onion stock|carrots sour-cream dill vinegar|Soften onion and grated beetroot.; Add potatoes, cabbage and stock, simmer 30 min.; Add vinegar; serve with sour cream.
+S|Sausage and potato soup|35|sausage potato onion stock|cream spinach|Brown sausage slices and onion.; Add potatoes and stock, simmer 20 min.; Stir in spinach and cream.
+S|Corn chowder|35|corn potato onion bacon milk|cream butter|Fry bacon and onion.; Add potatoes and water, simmer 15 min.; Add corn and milk, warm and partly blend.
+S|Fish chowder|35|fish potato onion milk bacon|cream corn dill|Fry bacon and onion.; Add potatoes and water, simmer 15 min.; Add milk and fish, cook 5 min.
+S|Salmon soup|30|salmon potato leek stock cream|dill carrots|Simmer potato and leek in stock.; Add cream and cubed salmon.; Cook 5 min, top with dill.
+S|Zucchini soup|25|zucchini onion stock|cream parmesan garlic|Soften onion and zucchini.; Add stock, simmer 10 min.; Blend.
+S|Roasted tomato and red pepper soup|45|tomato bell-pepper onion garlic stock|basil cream|Roast tomatoes, peppers, onion and garlic at 200°C for 30 min.; Blend with stock.
+S|African peanut stew|40|peanut-butter sweet-potato tomatoes-can onion stock|chicken spinach ginger chili-flakes|Soften onion and ginger.; Add sweet potato, tomatoes and stock, simmer 20 min.; Stir in peanut butter and spinach.
+S|Hot and sour soup|20|stock mushrooms tofu eggs vinegar soy|pepper cornstarch spring-onion|Simmer stock with mushrooms and tofu.; Season with vinegar, soy and pepper; thicken.; Drizzle in egg.
+S|Chicken and corn soup|25|chicken corn stock eggs|cornstarch spring-onion ginger|Simmer chicken and corn in stock.; Thicken lightly.; Drizzle in egg.
+S|Bean and bacon soup|40|beans bacon onion carrots stock|tomato-paste celery|Fry bacon and onion.; Add carrots, beans and stock.; Simmer 25 min.
+L|Chicken Caesar salad|20|chicken lettuce parmesan bread|mayonnaise lemon garlic mustard|Fry the chicken and toast bread cubes.; Mix mayo, lemon, garlic and parmesan for dressing.; Toss with lettuce.
+L|Greek salad|10|tomato cucumber feta olives red-onion|oregano olive-oil|Chop vegetables.; Top with feta and olives.; Dress with oil and oregano.
+L|Couscous salad|15|couscous tomato cucumber lemon|feta parsley chickpeas|Pour boiling water over couscous, cover 5 min.; Fluff and add chopped vegetables.; Dress with lemon and oil.
+L|Quinoa salad|25|quinoa cucumber tomato lemon|feta chickpeas avocado|Cook quinoa and cool.; Mix with vegetables.; Dress with lemon and oil.
+L|Chickpea salad|10|chickpeas cucumber tomato lemon|red-onion feta parsley|Mix chickpeas and chopped vegetables.; Dress with lemon and oil.
+L|Tuna salad|10|tuna lettuce eggs|tomato cucumber corn olives|Boil eggs.; Arrange salad, tuna and eggs.; Dress with oil and vinegar.
+L|Egg salad sandwich|15|eggs mayonnaise bread|mustard spring-onion|Hard-boil and chop eggs.; Mix with mayo and mustard.; Fill sandwiches.
+L|BLT sandwich|15|bacon lettuce tomato bread mayonnaise|avocado|Fry bacon crisp.; Toast bread and spread mayo.; Layer bacon, lettuce and tomato.
+L|Grilled cheese|10|bread cheese butter|ham tomato|Butter the outsides of the bread.; Fill with cheese.; Fry slowly until golden and melted.
+L|Croque monsieur|20|bread ham cheese butter milk flour|mustard|Make a small thick white sauce.; Fill bread with ham and cheese.; Top with sauce and cheese and grill.
+L|Club sandwich|20|bread chicken bacon lettuce tomato mayonnaise|eggs|Toast three slices per sandwich.; Layer chicken, bacon, lettuce and tomato.; Cut into quarters.
+L|Chicken wrap|15|tortillas chicken lettuce|sweet-chili mayonnaise cheese tomato|Warm tortillas.; Fill with sliced cooked chicken and salad.; Roll up tightly.
+L|Halloumi wrap|15|tortillas halloumi lettuce|tomato sweet-chili|Fry halloumi.; Fill tortillas with salad and halloumi.; Roll up.
+L|Falafel wrap|15|tortillas chickpeas lettuce yogurt|tahini tomato cucumber|Make or warm falafel.; Fill wraps with salad and sauce.
+L|Tuna melt|15|bread tuna mayonnaise cheese|red-onion|Mix tuna and mayo.; Spread on bread, top with cheese.; Grill until bubbling.
+L|Toast Skagen|15|shrimp mayonnaise bread dill lemon|red-onion creme-fraiche|Mix chopped shrimp with mayo, dill and lemon.; Pile onto buttered toast.
+L|Smoked salmon and egg open sandwich|10|bread smoked-salmon eggs|dill lemon cucumber|Boil eggs.; Top bread with salmon and egg slices.; Finish with dill.
+L|Avocado toast|10|bread avocado lemon|eggs chili-flakes feta|Toast bread.; Mash avocado with lemon and salt.; Spread and top as you like.
+L|Classic potato salad|30|potato mayonnaise|sour-cream red-onion mustard dill|Boil and cool potatoes.; Mix with mayo and sour cream.; Season.
+L|Coleslaw|15|cabbage carrots mayonnaise|vinegar sugar|Shred cabbage and carrots.; Mix with mayo, a little vinegar and sugar.
+L|Caprese salad|10|tomato mozzarella basil olive-oil|balsamic|Slice tomato and mozzarella.; Layer with basil.; Drizzle with oil.
+L|Niçoise salad|30|tuna eggs potato green-beans olives|lettuce tomato mustard|Boil potatoes, beans and eggs.; Arrange with tuna and olives.; Dress with mustard vinaigrette.
+L|Taco salad|20|mince taco-spice lettuce tomato cheese|tortilla-chips corn sour-cream|Brown mince with taco spice.; Arrange on salad.; Top with cheese and chips.
+L|Asian noodle salad|20|noodles cabbage carrots soy lime|peanut-butter cilantro nuts sesame-oil|Cook and rinse noodles.; Toss with shredded veg.; Dress with soy, lime and oil.
+L|Three-bean salad|10|beans chickpeas green-beans vinegar|red-onion parsley|Mix the beans.; Dress with oil, vinegar and salt.
+L|Fattoush with pita|15|pita tomato cucumber lettuce lemon|red-onion parsley|Toast torn pita until crisp.; Mix with chopped salad.; Dress with lemon and oil.
+L|Banh mi-style sandwich|20|bread pork carrots cucumber vinegar|cilantro sriracha mayonnaise|Quick-pickle carrot in vinegar and sugar.; Fry pork with soy.; Fill a baguette with pork, pickles and herbs.
+L|Halloumi and couscous salad|20|halloumi couscous cucumber tomato|lemon parsley|Make couscous.; Fry halloumi.; Combine with vegetables.
+L|Waldorf salad|10|apples celery nuts mayonnaise|lettuce raisins|Chop apples and celery.; Mix with nuts and mayo.
+L|Pasta salad with ham and peas|20|pasta ham peas mayonnaise|corn cheese|Cook and cool the pasta.; Mix with ham, peas and mayo.
+L|Chicken pita pocket|15|pita chicken yogurt cucumber|tomato lettuce garlic|Warm pita.; Fill with sliced chicken and salad.; Add yogurt sauce.
+D|Chili con carne with chocolate|60|mince beans tomatoes-can onion garlic cumin chocolate|cinnamon chili-flakes rice|Brown mince with onion and garlic.; Add spices, tomatoes and beans, simmer 40 min.; Stir in a square of dark chocolate.
+D|Chicken mince chili|45|mince beans tomatoes-can onion paprika cumin|corn bell-pepper|Brown chicken mince.; Add onion and spices.; Add tomatoes and beans; simmer 25 min.
+D|Chickpea shakshuka|25|chickpeas eggs tomatoes-can onion cumin|feta paprika bread|Make a spiced tomato sauce with chickpeas.; Crack in eggs and cover until set.
+D|Spicy sausage shakshuka|25|chorizo eggs tomatoes-can onion|bell-pepper bread|Fry chorizo and onion.; Add tomatoes, simmer 10 min.; Crack in eggs and cover.
+D|Baked eggs with spinach and feta|20|eggs spinach feta|cream bread|Wilt spinach in an ovenproof dish.; Crack in eggs and crumble feta.; Bake at 190°C for 10–12 min.
+D|Fried rice with bacon and egg|15|rice bacon eggs soy|peas spring-onion|Fry bacon.; Add cold rice and peas.; Push aside and scramble eggs, season with soy.
+D|Spicy pork rice bowl|25|pork rice soy sriracha garlic|cucumber eggs sesame-seeds|Fry thin pork with garlic.; Add soy and sriracha.; Serve over rice.
+D|Lemon pepper chicken with rice|30|chicken lemon pepper rice|garlic butter broccoli|Season chicken with lemon zest and lots of pepper.; Fry until golden.; Serve with rice.
+D|Paprika chicken with sour cream|35|chicken onion paprika sour-cream|bell-pepper rice pasta|Brown chicken with onion.; Add paprika and a little water, simmer 15 min.; Stir in sour cream.
+D|Chicken with pesto and mozzarella|30|chicken-breast pesto mozzarella tomato|basil pasta|Spread pesto over chicken in a dish.; Top with tomato and mozzarella.; Bake 25 min at 200°C.
+D|Bacon-wrapped chicken|35|chicken-breast bacon|cream-cheese potato|Wrap chicken in bacon.; Roast at 200°C for 25 min.
+D|Salmon with pesto crust|20|salmon pesto breadcrumbs|lemon green-beans|Spread pesto over salmon, sprinkle breadcrumbs.; Bake 12–15 min at 200°C.
+D|Mustard-crusted cod|25|cod mustard breadcrumbs butter|lemon potato|Spread mustard on fish, top with buttery breadcrumbs.; Bake 15 min at 200°C.
+D|Creamy shrimp and spinach|20|shrimp spinach cream garlic|rice pasta parmesan|Fry garlic and shrimp.; Add cream and spinach.; Simmer 2 min.
+D|Sausage and lentil stew|45|sausage red-lentils tomatoes-can onion stock|carrots paprika|Brown sausages and onion.; Add lentils, tomatoes and stock.; Simmer 25 min.
+D|Chorizo and chickpea stew|30|chorizo chickpeas tomatoes-can onion|spinach smoked-paprika bread|Fry chorizo and onion.; Add chickpeas and tomatoes, simmer 15 min.; Stir in spinach.
+D|Chicken and leek pie|60|chicken leek puff-pastry cream|mustard thyme|Soften leeks, add cooked chicken and cream.; Put in a dish, top with pastry.; Bake 30 min at 200°C.
+D|Mince and potato bake|60|mince potato onion tomatoes-can cheese|oregano|Brown mince with onion and tomatoes.; Layer with sliced potatoes.; Top with cheese, bake 40 min at 200°C covered then uncovered.
+D|Potato gratin with ham|70|potato cream ham cheese|garlic nutmeg|Slice potatoes thin.; Layer with ham, cream and garlic.; Top with cheese, bake 60 min at 180°C.
+D|Cauliflower cheese bake|45|cauliflower milk butter flour cheese|mustard breadcrumbs|Boil cauliflower briefly.; Make a cheese sauce.; Pour over and bake 25 min at 200°C.
+D|Stuffed mushrooms with cream cheese|25|mushrooms cream-cheese garlic|parmesan breadcrumbs|Remove stalks.; Fill with cream cheese and garlic.; Bake 15 min at 200°C.
+D|Halloumi and chickpea curry|30|halloumi chickpeas tomatoes-can coconut-milk curry onion|spinach rice|Fry halloumi cubes until golden, set aside.; Make a curry with onion, tomatoes, coconut milk and chickpeas.; Add halloumi back.
+D|Tofu tikka masala|40|tofu yogurt tomatoes-can onion garam-masala cream|garlic ginger rice|Marinate and roast tofu cubes.; Make a spiced tomato sauce.; Add cream and tofu.
+D|Lentil shepherd's pie|60|red-lentils onion carrots tomato-paste stock potato butter|peas thyme|Simmer lentils with veg and tomato paste.; Top with mash.; Bake 25 min at 200°C.
+D|Sweet potato and black bean tacos|35|sweet-potato beans tortillas|cumin lime avocado sour-cream|Roast cubed sweet potato with cumin.; Warm beans.; Fill tortillas.
+D|Pulled chicken sandwiches|40|chicken ketchup honey vinegar buns|paprika garlic cabbage|Simmer chicken in ketchup, honey, vinegar and paprika for 25 min.; Shred.; Serve in buns with slaw.
+D|BBQ-style sticky ribs|120|pork ketchup honey vinegar paprika|garlic worcestershire|Bake pork ribs covered at 160°C for 1.5 hours.; Brush with sauce of ketchup, honey, vinegar and paprika.; Roast uncovered at 220°C until sticky.
+D|Beef and potato hash|30|beef potato onion|eggs worcestershire|Fry diced potatoes until crisp.; Add onion and chopped cooked beef.; Top with fried eggs.
+D|Chicken nachos bake|25|tortilla-chips chicken cheese salsa|beans sour-cream avocado|Layer chips, chicken, beans and cheese on a tray.; Bake at 200°C for 10 min.; Top with salsa and sour cream.
+D|Chicken and broccoli bake|45|chicken broccoli cream cheese|rice mustard|Put cooked chicken and broccoli in a dish.; Pour over cream mixed with mustard.; Top with cheese and bake 25 min.
+D|Leek and bacon pasta bake|40|pasta leek bacon cream cheese|mustard|Fry leeks and bacon.; Mix with pasta and cream.; Top with cheese, bake 20 min.
+D|Salmon teriyaki noodle stir-fry|20|salmon noodles soy honey broccoli|ginger|Pan-fry salmon cubes.; Stir-fry broccoli, add noodles.; Glaze with soy and honey.
+D|Veggie fried rice with tofu|20|rice tofu eggs soy peas|carrots spring-onion|Fry tofu until crisp.; Add rice and peas.; Scramble eggs in, season with soy.
+D|Chicken shawarma rice bowl|35|chicken rice cumin paprika yogurt|cucumber tomato garlic|Make spiced chicken.; Cook rice.; Serve with yogurt sauce and salad.
+D|Lamb and chickpea tagine|90|lamb chickpeas tomatoes-can onion cumin cinnamon couscous|raisins|Brown lamb with onion and spices.; Add tomatoes and water, simmer 1 hour.; Add chickpeas, cook 15 min.
+D|Bean and rice skillet|25|rice beans tomatoes-can onion cumin|cheese corn|Fry onion with cumin.; Add rice, tomatoes and water, cover 18 min.; Stir in beans, top with cheese.
+D|Sausage and pepper rolls|30|sausage bell-pepper onion bread|mustard ketchup|Fry sausages with sliced peppers and onions.; Serve in rolls.
+D|Egg fried noodles with shrimp|15|noodles shrimp eggs soy|garlic spring-onion|Cook noodles.; Fry shrimp and garlic, scramble eggs.; Toss with noodles and soy.
+B|American pancakes|25|flour baking-powder eggs milk butter sugar|berries honey bacon|Whisk 2.5 dl flour, 2 tsp baking powder, 1 tbsp sugar and a pinch of salt.; Add 1 egg, 2.5 dl milk and 2 tbsp melted butter; mix just until combined.; Fry small thick pancakes on medium heat, flip when bubbles appear.
+B|Banana pancakes (two ingredients)|15|bananas eggs|cinnamon oats honey|Mash 1 ripe banana with 2 eggs.; Fry small pancakes in butter on low-medium heat.; Flip carefully.
+B|Blueberry pancakes|25|flour baking-powder eggs milk butter berries|sugar honey|Make American pancake batter.; Drop berries onto each pancake as it cooks.; Flip and finish.
+B|Oat pancakes|20|oats eggs milk|bananas baking-powder cinnamon|Blend 2 dl oats, 2 eggs and 2 dl milk.; Rest 5 min.; Fry small pancakes.
+B|Cottage cheese pancakes|20|cottage-cheese eggs flour|berries honey|Mix 2 dl cottage cheese, 2 eggs and 4 tbsp flour.; Fry small pancakes in butter on medium heat.
+B|Apple cinnamon pancakes|25|flour eggs milk apples cinnamon butter|baking-powder sugar|Make pancake batter with cinnamon.; Fold in grated apple.; Fry in butter.
+B|Chocolate chip pancakes|25|flour baking-powder eggs milk chocolate butter|sugar|Make American pancake batter.; Fold in chopped chocolate.; Fry on medium heat.
+B|Crêpes with ham and cheese|30|flour eggs milk ham cheese butter|mustard|Make thin pancake batter and rest 15 min.; Fry thin crêpes.; Fill with ham and cheese, fold and warm until melted.
+B|Dutch baby|30|flour eggs milk butter|lemon icing-sugar berries|Heat oven to 220°C with butter in a cast-iron pan.; Blend 3 eggs, 1.5 dl flour and 1.5 dl milk.; Pour into the hot pan and bake 18 min until puffed.
+B|Potato pancakes (raggmunk) with bacon|35|potato flour eggs milk bacon|jam|Grate potatoes and mix with a thin batter of flour, egg and milk.; Fry thin pancakes in butter until crisp.; Serve with crispy bacon and lingonberry jam.
+B|Rösti|30|potato butter|onion eggs|Grate parboiled potatoes, season.; Press into a buttered pan and fry until golden.; Flip with a plate and finish.
+B|Zucchini fritters|25|zucchini eggs flour|feta garlic sour-cream|Grate zucchini, salt and squeeze dry.; Mix with egg, flour and feta.; Fry spoonfuls until golden.
+B|Corn fritters|20|corn eggs flour baking-powder|spring-onion sweet-chili cheese|Mix corn, egg, flour and baking powder.; Fry spoonfuls until golden.
+B|Sveler|25|flour eggs milk sugar baking-soda butter|cardamom sour-cream jam|Whisk 2 eggs and 1 dl sugar, add 5 dl milk, 5 dl flour and 1 tsp baking soda.; Add 2 tbsp melted butter.; Fry thick pancakes on medium-low; serve with butter and sugar or brown cheese.
+B|Norwegian waffles (vafler)|20|flour eggs milk sugar butter|cardamom vanilla jam sour-cream brown-cheese|Whisk 4 eggs and 1 dl sugar.; Add 5 dl flour, 5 dl milk and 100 g melted butter; rest 15 min.; Bake in a waffle iron; serve with jam and sour cream or brown cheese.
+B|Sour cream waffles (rømmevafler)|20|sour-cream eggs flour sugar butter|cardamom jam|Mix 3 dl sour cream, 2 eggs, 3 tbsp sugar and 3 dl flour.; Add a little melted butter.; Bake in a waffle iron.
+B|Chocolate waffles|20|flour eggs milk sugar butter cocoa|vanilla|Make waffle batter and add 3 tbsp cocoa.; Bake in a waffle iron.
+B|Yeast waffles|90|flour yeast milk eggs butter sugar|vanilla berries|Mix warm milk, yeast, flour, egg, sugar and melted butter.; Rise 1 hour.; Bake in a waffle iron until crisp.
+B|French toast (arme riddere)|15|bread eggs milk butter|cinnamon sugar berries|Whisk eggs, milk and cinnamon.; Soak bread slices.; Fry in butter until golden.
+B|Baked oats|35|oats bananas eggs milk|berries cinnamon baking-powder chocolate|Mash banana, mix with oats, egg, milk and baking powder.; Pour into a small dish, top with berries.; Bake 25 min at 180°C.
+B|Overnight oats|5|oats milk yogurt|berries honey bananas peanut-butter|Mix oats, milk and yogurt in a jar.; Leave in the fridge overnight.; Top with fruit.
+B|Rice porridge (risgrøt)|60|rice milk butter sugar cinnamon|salt|Boil 2 dl short-grain rice in 3 dl water for 10 min.; Add 1 litre milk and simmer on low, stirring often, for 45 min.; Serve with butter, sugar and cinnamon.
+B|Homemade granola|35|oats nuts honey oil|coconut raisins cinnamon|Mix oats, nuts, honey, oil and cinnamon.; Spread on a tray and bake at 160°C for 25 min, stirring once.; Add raisins when cool.
+B|Creamy scrambled eggs|10|eggs butter|bread spring-onion cheese|Whisk eggs with salt.; Cook in butter over low heat, stirring slowly.; Take off the heat while still soft.
+B|Egg muffins|30|eggs|ham spinach cheese bell-pepper|Whisk eggs, add chopped fillings.; Pour into a greased muffin tin.; Bake 20 min at 180°C.
+B|Breakfast burrito|20|tortillas eggs cheese|bacon potato salsa avocado|Scramble eggs.; Fill tortillas with eggs, cheese and fillings.; Roll and toast in a pan.
+B|Turkish eggs (çılbır)|15|eggs yogurt garlic butter paprika|bread dill|Mix yogurt with grated garlic and salt.; Poach the eggs.; Serve on the yogurt with paprika butter.
+B|Eggs Benedict|30|eggs bread ham butter lemon||Make hollandaise: whisk 2 yolks with lemon over gentle heat, slowly add melted butter.; Poach eggs.; Stack toast, ham, egg and sauce.
+B|Poached eggs on toast|10|eggs bread|avocado butter|Simmer water with a dash of vinegar.; Slip in eggs and cook 3 min.; Serve on toast.
+B|Ham and cheese omelette|10|eggs ham cheese butter|spring-onion|Beat eggs with salt.; Cook in butter, add ham and cheese.; Fold and serve.
+B|Mushroom omelette|15|eggs mushrooms butter|cheese thyme|Fry mushrooms in butter.; Pour in beaten eggs.; Fold when set.
+B|Spinach and feta frittata|25|eggs spinach feta|onion potato|Fry onion and spinach in an ovenproof pan.; Pour in beaten eggs and feta.; Cook gently, finish under the grill.
+B|Breakfast hash with eggs|30|potato onion eggs|bacon bell-pepper|Fry diced potatoes until crisp.; Add onion and pepper.; Make wells and crack in eggs, cover until set.
+B|Smoothie bowl|5|berries bananas yogurt|oats nuts honey|Blend frozen berries, banana and yogurt thick.; Top with oats, nuts and fruit.
+B|Yogurt parfait|5|yogurt berries oats|honey nuts|Layer yogurt, berries and granola or oats in a glass.
+B|Huevos rancheros|20|eggs tortillas tomatoes-can beans|onion cheese avocado chili-flakes|Simmer tomatoes with onion and chili.; Warm tortillas and beans.; Top with fried eggs and sauce.
+B|Full English-style breakfast|25|eggs bacon sausage bread|beans tomato mushrooms|Fry sausages and bacon.; Fry mushrooms and tomatoes.; Fry eggs and toast bread.
+B|Bacon and egg sandwich|10|bacon eggs bread|ketchup cheese|Fry bacon and an egg.; Sandwich between toast.
+B|Banana oat porridge|10|oats milk bananas|cinnamon peanut-butter honey|Simmer oats in milk.; Stir in mashed banana.
+B|Apple cinnamon porridge|10|oats milk apples cinnamon|raisins honey|Simmer oats with milk and grated apple.; Add cinnamon.
+B|Savory oats with egg|15|oats stock eggs|cheese spring-onion soy|Cook oats in stock.; Top with a fried egg and cheese.
+B|Pancake stack with bacon and syrup|25|flour baking-powder eggs milk bacon honey|butter|Make American pancakes.; Fry bacon crisp.; Stack and drizzle with honey.
+B|Crêpes with jam|25|flour eggs milk butter jam|sugar|Make thin pancake batter.; Fry crêpes.; Spread with jam and roll.
+N|Beetroot hummus|10|chickpeas beetroot tahini lemon garlic|cumin|Blend all with salt and a splash of water until smooth.
+N|Roasted red pepper hummus|10|chickpeas bell-pepper tahini lemon garlic|paprika|Roast or use jarred pepper.; Blend with chickpeas, tahini, lemon and garlic.
+N|Guacamole|10|avocado lime red-onion|tomato cilantro fresh-chili|Mash avocado with lime and salt.; Stir in chopped onion, tomato and chili.
+N|Pico de gallo|10|tomato red-onion lime|cilantro fresh-chili|Chop tomato and onion finely.; Mix with lime, salt and herbs.
+N|Tzatziki|10|yogurt cucumber garlic|dill olive-oil lemon|Grate cucumber and squeeze dry.; Mix with yogurt, garlic and salt.
+N|Loaded nachos|15|tortilla-chips cheese|beans salsa sour-cream avocado fresh-chili|Spread chips on a tray with cheese and beans.; Bake at 200°C for 8 min.; Top with salsa and sour cream.
+N|Butter popcorn|10|popcorn butter salt||Heat oil in a pot with a lid, add kernels and shake while they pop.; Toss with melted butter and salt.
+N|Cinnamon sugar popcorn|10|popcorn butter sugar cinnamon||Pop the corn.; Toss with melted butter, sugar and cinnamon.
+N|Parmesan herb popcorn|10|popcorn parmesan|garlic-powder oregano olive-oil|Pop the corn.; Toss with oil, grated parmesan and herbs.
+N|Crispy roasted chickpeas|35|chickpeas paprika|cumin garlic-powder|Dry the chickpeas well, toss with oil and spice.; Roast at 200°C for 25–30 min.
+N|Spiced nuts|15|nuts|paprika cumin honey salt|Toss nuts with oil and spices.; Roast at 180°C for 10 min.
+N|Honey roasted nuts|15|nuts honey|cinnamon salt|Toss nuts with honey and a pinch of salt.; Roast at 170°C for 10 min, stirring.
+N|Garlic bread|15|bread butter garlic|parsley cheese|Mix soft butter with garlic.; Spread on sliced bread.; Bake at 200°C for 10 min.
+N|Bruschetta|10|bread tomato garlic olive-oil|basil balsamic|Toast bread and rub with garlic.; Top with chopped tomato, oil and salt.
+N|Oven potato wedges|40|potato|paprika garlic-powder rosemary|Cut potatoes into wedges, toss with oil and seasoning.; Roast at 220°C for 30–35 min.
+N|Sweet potato fries|35|sweet-potato cornstarch|paprika|Cut thin, toss with cornstarch and oil.; Spread out and roast at 220°C for 25 min.
+N|Patatas bravas|40|potato tomatoes-can smoked-paprika garlic|mayonnaise chili-flakes|Roast potato cubes until crisp.; Simmer a spicy tomato sauce.; Serve with sauce and garlic mayo.
+N|Onion rings|25|onion flour eggs breadcrumbs|paprika|Slice onions into rings.; Coat in flour, egg and breadcrumbs.; Fry until golden.
+N|Mozzarella sticks|25|mozzarella flour eggs breadcrumbs|tomatoes-can|Cut mozzarella into sticks and freeze 15 min.; Coat twice in egg and breadcrumbs.; Fry quickly until golden.
+N|Homemade chicken nuggets|25|chicken-breast flour eggs breadcrumbs|paprika ketchup|Cut chicken into pieces.; Coat in flour, egg and breadcrumbs.; Fry or bake until golden.
+N|Spicy buffalo wings|45|chicken sriracha butter|garlic-powder honey sour-cream|Roast seasoned wings at 220°C for 35 min.; Toss in melted butter and sriracha.
+N|BBQ chicken wings|45|chicken ketchup honey|paprika garlic worcestershire|Roast wings at 220°C for 30 min.; Brush with ketchup-honey sauce, roast 10 min more.
+N|Deviled eggs|20|eggs mayonnaise mustard|paprika|Hard-boil and halve eggs.; Mash yolks with mayo and mustard.; Pipe back in and sprinkle paprika.
+N|Sausage rolls|35|puff-pastry sausage|eggs|Roll sausage meat in strips of puff pastry.; Brush with egg and cut into pieces.; Bake 20 min at 200°C.
+N|Cheese straws|25|puff-pastry cheese|paprika eggs|Sprinkle cheese on pastry, fold and roll.; Cut into strips and twist.; Bake 12 min at 200°C.
+N|Pigs in blankets|25|sausage puff-pastry|mustard eggs|Wrap small sausages in pastry strips.; Bake 15–18 min at 200°C.
+N|Pita chips|15|pita olive-oil|paprika|Cut pita into triangles.; Brush with oil and salt.; Bake at 190°C for 8–10 min.
+N|Homemade tortilla chips|15|tortillas oil|lime paprika|Cut tortillas into triangles.; Brush with oil, salt.; Bake at 190°C for 8–10 min.
+N|Energy balls|15|oats peanut-butter honey|chocolate coconut raisins|Mix oats, peanut butter and honey.; Stir in chocolate chips.; Roll into balls and chill.
+N|Oat granola bars|35|oats honey butter|nuts raisins chocolate brown-sugar|Melt butter and honey.; Mix with oats and add-ins, press into a tin.; Bake 20 min at 170°C, cool before cutting.
+N|Trail mix|5|nuts raisins|chocolate coconut|Mix everything in a jar.
+N|Apple chips|120|apples|cinnamon|Slice apples very thin.; Bake at 100°C for 1.5–2 hours, turning once.
+N|Frozen yogurt bark|10|yogurt berries honey|nuts chocolate|Spread yogurt mixed with honey on a lined tray.; Scatter berries.; Freeze 2 hours and break into pieces.
+N|Berry smoothie|5|berries bananas milk|yogurt oats honey|Blend everything until smooth.
+N|Pita pizzas|15|pita tomato-paste cheese|ham olives oregano|Spread tomato on pita.; Top with cheese and toppings.; Bake at 220°C for 8 min.
+N|Halloumi fries|15|halloumi flour|paprika sweet-chili yogurt|Cut halloumi into sticks and dust in flour.; Fry until golden.
+N|Homemade crackers|30|flour olive-oil|sesame-seeds salt|Mix 2.5 dl flour, 3 tbsp oil, 1 dl water and salt.; Roll very thin, cut and prick.; Bake at 200°C for 10–12 min.
+N|Parmesan crisps|15|parmesan|pepper|Make small piles of grated parmesan on a lined tray.; Bake at 200°C for 5–6 min until golden.
+N|Spinach and cream cheese dip|20|spinach cream-cheese garlic|parmesan sour-cream|Warm spinach with garlic.; Stir in cream cheese and parmesan.; Serve warm with bread or chips.
+N|French onion dip|25|onion sour-cream|butter garlic-powder|Caramelise chopped onion slowly.; Cool and mix with sour cream and salt.
+N|Queso dip|15|cheese milk cornstarch|salsa fresh-chili|Toss grated cheese with cornstarch.; Melt slowly into warm milk.; Stir in salsa.
+N|Baba ganoush|50|eggplant tahini lemon garlic|olive-oil|Roast eggplant whole at 220°C until collapsed.; Scoop out flesh, mash with tahini, lemon and garlic.
+N|Tuna dip|10|tuna cream-cheese lemon|red-onion|Mix tuna, cream cheese and lemon until smooth.
+N|Smoked salmon roll-ups|10|tortillas smoked-salmon cream-cheese|dill lettuce|Spread cream cheese on tortilla.; Add salmon and roll tightly.; Slice into rounds.
+N|Caprese skewers|10|tomato mozzarella basil|balsamic|Thread tomato, mozzarella and basil onto sticks.
+N|Ham and cheese muffins|30|flour baking-powder eggs milk ham cheese|butter|Mix flour and baking powder, add egg, milk and melted butter.; Fold in ham and cheese.; Bake 20 min at 190°C.
+N|Samosa puffs|40|puff-pastry potato peas curry onion|garlic|Make a dry curried potato and pea filling.; Fill pastry squares and fold into triangles.; Bake 20 min at 200°C.
+N|Cheese toastie fingers|10|bread cheese butter|ham|Make grilled cheese sandwiches.; Cut into fingers.
+N|Cucumber bites with cream cheese|10|cucumber cream-cheese|smoked-salmon dill|Slice cucumber thick.; Top with cream cheese and salmon.
+K|Chocolate sheet cake (langpannekake)|50|flour sugar eggs butter milk cocoa baking-powder icing-sugar|vanilla coconut|Heat oven to 180°C. Whisk 4 eggs and 4 dl sugar until pale.; Add 200 g melted butter, 2 dl milk, then 5 dl flour, 4 tbsp cocoa and 3 tsp baking powder.; Bake in a lined tray for 25 min.; Ice with icing sugar, cocoa, melted butter and a little water; sprinkle coconut.
+K|Classic chocolate layer cake|70|flour sugar eggs butter milk cocoa baking-powder chocolate cream|vanilla|Make a chocolate sponge batter and bake in two tins at 175°C for 30 min.; Melt chocolate into warm cream for a ganache.; Layer and cover the cakes with ganache.
+K|Brownies|40|butter chocolate sugar eggs flour|cocoa nuts vanilla|Melt 150 g butter with 150 g dark chocolate.; Whisk in 3 dl sugar and 3 eggs, then 1.5 dl flour.; Bake in a lined tin at 175°C for 22–25 min; it should be fudgy.
+K|Peanut butter brownies|40|butter chocolate sugar eggs flour peanut-butter|nuts|Make brownie batter.; Swirl in spoonfuls of warmed peanut butter.; Bake at 175°C for 25 min.
+K|Cream cheese brownies|45|butter chocolate sugar eggs flour cream-cheese|vanilla|Make brownie batter.; Beat cream cheese with sugar and an egg, swirl through.; Bake at 175°C for 30 min.
+K|Blondies|35|butter brown-sugar eggs flour vanilla|chocolate nuts|Mix 125 g melted butter with 2 dl brown sugar, 1 egg and vanilla.; Stir in 2.5 dl flour and chocolate chunks.; Bake at 175°C for 22 min.
+K|Chocolate chip cookies|25|butter brown-sugar sugar eggs flour baking-soda chocolate|vanilla|Cream 125 g butter with 1 dl each brown and white sugar.; Add 1 egg, then 3 dl flour, 0.5 tsp baking soda and salt.; Fold in chocolate, scoop and bake at 180°C for 10–11 min.
+K|Double chocolate cookies|25|butter sugar eggs flour cocoa chocolate baking-soda|vanilla|Make cookie dough with 3 tbsp cocoa replacing some flour.; Add chocolate chunks.; Bake at 180°C for 10 min.
+K|Oatmeal raisin cookies|25|butter brown-sugar eggs flour oats raisins baking-soda|cinnamon|Cream butter and sugar, add egg.; Mix in flour, oats, soda and cinnamon, then raisins.; Bake at 180°C for 12 min.
+K|Peanut butter cookies|20|peanut-butter sugar eggs|baking-soda chocolate|Mix 2.5 dl peanut butter, 2 dl sugar and 1 egg.; Roll balls and press with a fork.; Bake at 180°C for 10 min.
+K|Shortbread|40|butter sugar flour|vanilla cornstarch|Rub 200 g butter, 1 dl sugar and 5 dl flour into a dough.; Press into a tin, prick and chill.; Bake at 160°C for 30 min, cut while warm.
+K|Sugar cookies|30|butter sugar eggs flour baking-powder vanilla|icing-sugar|Cream butter and sugar, add egg and vanilla.; Mix in flour and baking powder, chill.; Roll, cut shapes and bake at 180°C for 8–10 min.
+K|Banana bread|70|bananas flour sugar eggs butter baking-soda|nuts cinnamon chocolate|Mash 3 ripe bananas, mix with 100 g melted butter, 1.5 dl sugar and 2 eggs.; Add 4 dl flour and 1 tsp baking soda.; Bake in a loaf tin at 175°C for 55–60 min.
+K|Chocolate banana bread|70|bananas flour sugar eggs butter baking-soda cocoa chocolate|nuts|Make banana bread batter with 3 tbsp cocoa.; Fold in chocolate.; Bake at 175°C for 60 min.
+K|Carrot cake (gulrotkake)|60|carrots flour sugar eggs oil baking-powder cinnamon cream-cheese icing-sugar butter|nuts raisins vanilla|Whisk 3 eggs and 3 dl sugar, add 2 dl oil and 4 dl grated carrot.; Fold in 3.5 dl flour, 2 tsp baking powder and cinnamon.; Bake at 175°C for 35–40 min.; Frost with cream cheese, butter and icing sugar.
+K|Norwegian apple cake (eplekake)|60|apples butter sugar eggs flour baking-powder|cinnamon vanilla nuts|Beat 150 g butter and 1.5 dl sugar, add 2 eggs.; Fold in 2 dl flour and 1 tsp baking powder.; Spread in a tin, press in apple slices, sprinkle cinnamon sugar and bake at 180°C for 40 min.
+K|Lemon drizzle cake|60|lemon butter sugar eggs flour baking-powder icing-sugar|milk|Make a sponge batter with lemon zest.; Bake in a loaf tin at 175°C for 45 min.; Pour over lemon juice mixed with sugar while warm.
+K|Lemon bars|60|lemon flour butter sugar eggs icing-sugar|cornstarch|Press a shortbread base into a tin and bake 15 min at 175°C.; Whisk eggs, sugar, lemon juice, zest and a little flour.; Pour over and bake 20 min; dust with icing sugar.
+K|Yogurt cake|50|yogurt flour sugar eggs oil baking-powder|lemon vanilla berries|Mix 2 dl yogurt, 2 dl sugar, 3 eggs and 1 dl oil.; Fold in 3 dl flour and 2 tsp baking powder.; Bake at 175°C for 40 min.
+K|Pound cake|70|butter sugar eggs flour|vanilla lemon baking-powder|Beat 200 g butter and 2 dl sugar until fluffy.; Add 4 eggs one at a time, then 3 dl flour.; Bake in a loaf tin at 165°C for 55–60 min.
+K|Sponge cake (sukkerbrød)|45|eggs sugar flour baking-powder|cornstarch vanilla|Whisk 4 eggs and 2 dl sugar for 8 min until thick and white.; Sift in 2 dl flour with 1 tsp baking powder and fold gently.; Bake at 175°C for 30–35 min.
+K|Cream cake with berries (bløtkake)|90|eggs sugar flour baking-powder cream berries|vanilla jam milk|Bake a sponge cake and cool; split into three layers.; Moisten with milk, fill with whipped cream, jam and berries.; Cover with cream and decorate with berries.
+K|Baked cheesecake|90|cream-cheese sugar eggs biscuits butter|vanilla lemon sour-cream berries|Mix crushed biscuits with melted butter, press into a tin.; Beat 600 g cream cheese, 1.5 dl sugar, 3 eggs and vanilla.; Bake at 160°C for 45 min, cool in the oven, chill overnight.
+K|No-bake cheesecake|30|cream-cheese cream icing-sugar biscuits butter|lemon berries vanilla|Make a biscuit base.; Whip cream and fold into cream cheese sweetened with icing sugar.; Spread over the base and chill 4 hours.
+K|Blueberry muffins|35|flour sugar eggs milk butter baking-powder berries|vanilla lemon|Mix 4 dl flour, 1.5 dl sugar and 2 tsp baking powder.; Add 2 eggs, 1.5 dl milk and 100 g melted butter.; Fold in berries; bake at 200°C for 18–20 min.
+K|Chocolate muffins|30|flour sugar eggs milk butter baking-powder cocoa chocolate|vanilla|Make muffin batter with cocoa.; Fold in chocolate chunks.; Bake at 200°C for 18 min.
+K|Banana muffins|30|bananas flour sugar eggs butter baking-powder|cinnamon nuts chocolate|Mash bananas into a muffin batter.; Bake at 190°C for 20 min.
+K|Vanilla cupcakes|40|flour sugar eggs butter milk baking-powder vanilla icing-sugar|cream-cheese|Make a vanilla sponge batter.; Bake in cupcake cases at 180°C for 18 min.; Top with buttercream.
+K|Red velvet cupcakes|45|flour sugar eggs oil cocoa baking-soda vinegar cream-cheese icing-sugar|yogurt vanilla|Mix a cocoa batter with yogurt, vinegar and baking soda.; Bake at 175°C for 20 min.; Frost with cream cheese icing.
+K|Marble cake|70|butter sugar eggs flour baking-powder cocoa milk|vanilla|Make a pound cake batter.; Stir cocoa into a third of it.; Swirl together in a tin and bake at 170°C for 50 min.
+K|Cinnamon buns (kanelboller)|120|flour yeast milk butter sugar cinnamon cardamom|eggs icing-sugar|Make a dough with 1 kg flour, 50 g yeast, 5 dl warm milk, 150 g butter, 1.5 dl sugar and cardamom; rise 45 min.; Roll out, spread with butter, sugar and cinnamon, roll up and slice.; Rise 30 min and bake at 220°C for 10–12 min.
+K|Skillingsboller|120|flour yeast milk butter sugar cinnamon|cardamom|Make bun dough and let it rise.; Roll, fill with butter and cinnamon sugar, roll up and cut thick slices.; Bake at 220°C for 10–12 min and brush with sugar syrup.
+K|Cardamom buns (hveteboller)|100|flour yeast milk butter sugar cardamom|raisins eggs|Make a sweet yeast dough with cardamom.; Rise, shape round buns, rise again.; Brush with egg and bake at 220°C for 8–10 min.
+K|School buns (skolebrød)|120|flour yeast milk butter sugar cardamom eggs cornstarch vanilla icing-sugar|coconut|Make bun dough and shape buns.; Make vanilla custard: milk, egg yolks, sugar, cornstarch and vanilla, cooked thick.; Press a well in each bun, fill with custard and bake.; Glaze with icing and dip in coconut.
+K|American cinnamon rolls|120|flour yeast milk butter sugar cinnamon cream-cheese icing-sugar|brown-sugar vanilla|Make an enriched dough and let it rise.; Fill with butter, brown sugar and cinnamon, roll and slice.; Bake in a dish at 190°C for 25 min; frost with cream cheese icing.
+K|Focaccia|180|flour yeast olive-oil salt|rosemary tomato olives|Mix 500 g flour, 1 tsp yeast, 4 dl water and salt; rise 2 hours.; Spread in an oiled tray, dimple and drizzle with oil.; Bake at 230°C for 20–25 min.
+K|Simple white bread|180|flour yeast salt|butter oil|Mix 600 g flour, 1 tsp yeast, 4 dl water and salt; knead 10 min.; Rise 1.5 hours, shape a loaf, rise 45 min.; Bake at 220°C for 35 min.
+K|Naan|90|flour yeast yogurt butter|garlic sugar|Make dough with flour, yeast, yogurt and water; rise 1 hour.; Roll ovals.; Cook in a very hot dry pan; brush with garlic butter.
+K|Pita bread|90|flour yeast olive-oil|sugar|Make a soft yeast dough and rise 1 hour.; Roll thin rounds.; Bake at 250°C for 4–5 min until puffed.
+K|Bread rolls (rundstykker)|120|flour yeast milk butter|oats sesame-seeds eggs|Make a dough, rise 1 hour.; Shape rolls and rise 30 min.; Bake at 220°C for 12–15 min.
+K|Scones|30|flour butter baking-powder milk sugar|raisins jam cream|Rub 75 g butter into 5 dl flour with 3 tsp baking powder.; Add 2 dl milk and mix briefly.; Pat out, cut rounds and bake at 220°C for 12 min.
+K|Cheese scones|30|flour butter baking-powder milk cheese|mustard|Make scone dough with grated cheese.; Cut and bake at 220°C for 12 min.
+K|Quick soda bread|50|flour baking-soda yogurt|oats|Mix flour, soda and salt with yogurt and a little milk.; Shape a round and cut a deep cross.; Bake at 200°C for 35–40 min.
+K|Tosca cake|60|butter sugar eggs flour baking-powder nuts cream|vanilla|Bake a simple sponge at 175°C for 25 min.; Melt butter, sugar, a little cream and sliced nuts.; Spread on the cake and bake 10 min more until golden.
+K|Chocolate lava cakes|25|chocolate butter eggs sugar flour|cocoa berries|Melt 100 g chocolate with 100 g butter.; Whisk 2 eggs and 2 yolks with 75 g sugar, fold in chocolate and 2 tbsp flour.; Bake in greased cups at 220°C for 8–10 min.
+K|Coconut macaroons|25|coconut sugar eggs|chocolate vanilla|Mix 200 g coconut, 1.5 dl sugar and 2 eggs.; Shape small mounds.; Bake at 180°C for 12–15 min until golden.
+K|Swiss roll with jam (rullekake)|30|eggs sugar flour baking-powder jam|cream|Whisk 3 eggs and 1.5 dl sugar thick, fold in 1.5 dl flour.; Bake thin on a tray at 250°C for 5–6 min.; Turn onto sugared paper, spread jam and roll up.
+K|Apple pie|80|apples flour butter sugar cinnamon|eggs cream|Make pastry with flour, butter and a little water; chill.; Fill a tin with sliced apples tossed in sugar and cinnamon.; Top with pastry, bake at 190°C for 45 min.
+K|Lemon tart|80|flour butter sugar eggs lemon cream|icing-sugar|Line a tin with sweet pastry and blind-bake.; Whisk eggs, sugar, lemon juice and cream.; Pour in and bake at 150°C until just set.
+K|Smultringer (Norwegian doughnuts)|60|flour sugar eggs milk butter baking-powder cardamom oil||Mix a soft dough with cardamom.; Roll out and cut rings.; Fry in hot oil until golden, toss in sugar.
+K|Churros|30|flour butter sugar cinnamon eggs oil|chocolate|Boil 2.5 dl water and 50 g butter, beat in 2.5 dl flour, then an egg.; Pipe strips into hot oil and fry.; Roll in cinnamon sugar.
+K|Cardamom waffle cake|45|flour eggs milk sugar butter cardamom|jam|Bake waffle batter in a greased tin at 180°C for 30 min.; Serve with jam.
+K|Oat and chocolate flapjacks|35|oats butter brown-sugar honey|chocolate raisins|Melt butter, sugar and honey.; Stir in oats, press into a tin.; Bake at 170°C for 20 min.
+K|Chocolate chip banana muffins|30|bananas flour sugar eggs butter baking-powder chocolate||Make banana muffins with chocolate chips.; Bake at 190°C for 20 min.
+K|Raspberry crumble bars|50|flour butter sugar oats berries|jam cinnamon|Make a crumble of flour, oats, butter and sugar.; Press half in a tin, spread berries or jam, top with the rest.; Bake at 180°C for 30 min.
+T|Apple crumble|45|apples flour butter sugar|oats cinnamon cream|Put sliced apples in a dish with sugar and cinnamon.; Rub butter into flour, sugar and oats.; Scatter over and bake at 200°C for 30 min.
+T|Berry crumble|40|berries flour butter sugar|oats vanilla cream|Put frozen berries in a dish with a little sugar.; Top with crumble.; Bake at 200°C for 25–30 min.
+T|Pavlova|120|eggs sugar cornstarch vinegar cream berries|vanilla|Whisk 4 whites stiff, add 2.5 dl sugar gradually.; Fold in 1 tsp cornstarch and vinegar; spread a circle.; Bake at 120°C for 1 hour and cool in the oven.; Top with whipped cream and berries.
+T|Meringues|90|eggs sugar|cocoa vanilla|Whisk whites stiff, add sugar gradually until glossy.; Pipe small mounds.; Bake at 100°C for 1 hour.
+T|Rice cream (riskrem)|20|rice milk cream sugar vanilla|berries jam|Use cold leftover rice porridge.; Fold in whipped cream, sugar and vanilla.; Serve with red berry sauce.
+T|Chocolate mousse|20|chocolate eggs cream sugar|vanilla|Melt 150 g chocolate and cool slightly.; Whip cream, whisk egg whites with a little sugar.; Fold yolks into chocolate, then cream, then whites; chill 3 hours.
+T|Crème caramel|70|eggs milk sugar vanilla|cream|Melt sugar to caramel and pour into cups.; Whisk eggs, milk, sugar and vanilla, pour over.; Bake in a water bath at 160°C for 40 min; chill.
+T|Chocolate pudding|15|milk cocoa sugar cornstarch|chocolate vanilla cream|Whisk sugar, cocoa and cornstarch into cold milk.; Heat while stirring until thick.; Chill.
+T|Vanilla custard|15|milk eggs sugar cornstarch vanilla|cream|Whisk yolks, sugar and cornstarch.; Pour on hot milk, return to the pan and stir until thick.
+T|Fruit salad|10|apples bananas oranges|berries lime honey|Chop the fruit.; Toss with a little lime and honey.
+T|Baked apples|35|apples butter sugar cinnamon|raisins nuts cream|Core apples and fill with butter, sugar, cinnamon and raisins.; Bake at 190°C for 25 min.
+T|Berry fool|10|berries cream sugar|yogurt vanilla|Mash half the berries with sugar.; Whip cream and fold in the berries.
+T|Eton mess|10|cream berries sugar|eggs|Whip cream.; Fold in crushed meringues and berries.
+T|Chocolate fondue|10|chocolate cream|bananas apples berries|Melt chocolate into warm cream.; Serve with fruit to dip.
+T|Caramelised bananas|10|bananas butter brown-sugar|cinnamon cream|Fry halved bananas in butter and sugar until caramelised.; Serve with cream or ice cream.
+T|Rice pudding baked|90|rice milk sugar butter|vanilla nutmeg cinnamon|Mix short-grain rice, milk, sugar and butter in a dish.; Bake at 150°C for 1.5 hours, stirring once.
+T|Chocolate-dipped bananas|20|bananas chocolate|nuts coconut|Halve bananas, dip in melted chocolate.; Sprinkle with nuts and freeze.
+T|Lemon posset|15|cream sugar lemon|berries|Boil cream with sugar for 3 min.; Stir in lemon juice.; Pour into glasses and chill 3 hours.
+T|Bread and butter pudding|50|bread butter eggs milk sugar|raisins cinnamon vanilla|Butter bread slices and layer in a dish with raisins.; Pour over eggs whisked with milk and sugar.; Bake at 180°C for 35 min.
+T|Berry yogurt pots|5|yogurt berries honey|oats nuts|Layer yogurt and berries in glasses.; Drizzle with honey.
+T|Pancake cake with cream and berries|45|flour eggs milk butter cream berries|sugar jam|Fry a stack of thin pancakes.; Layer with whipped cream and berries.`;
+MORE_RECIPES.split("\n").forEach(l=>{
+  const [c,t,m,req,opt,s]=l.split("|");
+  const sp=x=>x.trim()?x.trim().split(/\s+/):[];
+  RECIPES.push({c,t,m:+m,req:sp(req),opt:sp(opt),s:s.split("; ").map(x=>x.trim()).filter(Boolean)});
+});
 
 /* ---------- state + persistence ---------- */
 const LKEY="kitchen-stock-v1";
@@ -342,7 +872,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
 
 /* ---------- stock view ---------- */
 let locFilter="all", query="";
-document.getElementById("catalog-names").innerHTML=CATALOG.map(c=>`<option value="${esc(c[1])}">`).join("");
+document.getElementById("catalog-names").innerHTML=ALL_CATALOG.map(c=>`<option value="${esc(c[1])}">`).join("");
 document.getElementById("loc-chips").addEventListener("click",e=>{
   const b=e.target.closest("button[data-loc]"); if(!b) return;
   locFilter=b.dataset.loc;
@@ -423,7 +953,7 @@ function recipeHTML(r,have,idx){
   const isOpen=open.has(idx);
   const sub=missing.length?`Missing ${missing.map(nameOf).join(", ")}`:`You have everything`;
   return `<div class="recipe" data-idx="${idx}">
-    <button data-act="toggle" aria-expanded="${isOpen}"><span class="t"><strong>${esc(r.t)}</strong><span>${esc(sub)}</span></span><span class="min">${r.m} min</span></button>
+    <button data-act="toggle" aria-expanded="${isOpen}"><span class="t"><strong>${esc(r.t)}<span class="cat">${CAT_SHORT[r.c]||""}</span></strong><span>${esc(sub)}</span></span><span class="min">${r.m} min</span></button>
     <div class="body" ${isOpen?"":"hidden"}>
       <div class="ing">${r.req.map(k=>`<span class="${have.has(k)?"ok":"miss"}">${esc(nameOf(k))}</span>`).join("")}
       ${(r.opt||[]).map(k=>`<span class="${have.has(k)?"ok":"opt"}">${esc(nameOf(k))} (optional)</span>`).join("")}</div>
@@ -431,19 +961,52 @@ function recipeHTML(r,have,idx){
       ${missing.length?`<button class="btn ghost" data-act="shop">Add missing to shopping</button>`:""}
     </div></div>`;
 }
+const REC_CATS=[["all","All"],["D","Dinner"],["S","Soups"],["L","Lunch"],["B","Breakfast & pancakes"],["N","Snacks"],["K","Cakes & baking"],["T","Desserts"]];
+const CAT_SHORT={D:"Dinner",S:"Soup",L:"Lunch",B:"Breakfast",N:"Snack",K:"Baking",T:"Dessert"};
+let recCat="all", recQuery="", restOpen=false;
+const PAGE=25, limits={ready:PAGE,almost:PAGE,rest:PAGE};
+const resetLimits=()=>{ limits.ready=limits.almost=limits.rest=PAGE; };
+document.getElementById("rec-chips").innerHTML=REC_CATS.map(([k,l])=>`<button data-cat="${k}" aria-pressed="${k==="all"}">${l}</button>`).join("");
+document.getElementById("rec-chips").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-cat]"); if(!b) return;
+  recCat=b.dataset.cat; resetLimits();
+  document.querySelectorAll("#rec-chips button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  renderRecipes();
+});
+let recTimer=null;
+document.getElementById("rec-search").addEventListener("input",e=>{
+  clearTimeout(recTimer);
+  recTimer=setTimeout(()=>{ recQuery=e.target.value.trim().toLowerCase(); resetLimits(); renderRecipes(); },150);
+});
+function recMatches(r){
+  if(recCat!=="all"&&r.c!==recCat) return false;
+  if(!recQuery) return true;
+  if(r.t.toLowerCase().includes(recQuery)) return true;
+  return r.req.concat(r.opt||[]).some(k=>nameOf(k).toLowerCase().includes(recQuery));
+}
 function renderRecipes(){
   const have=haveKeys();
   const scored=RECIPES.map((r,i)=>({r,i,miss:r.req.filter(k=>!have.has(k)).length}));
-  const ready=scored.filter(x=>x.miss===0), almost=scored.filter(x=>x.miss>0&&x.miss<=2), rest=scored.filter(x=>x.miss>2);
+  document.getElementById("rec-badge").textContent=scored.filter(x=>x.miss===0).length||"";
+  if(tab!=="recipes") return;
+  const shown=scored.filter(x=>recMatches(x.r));
+  const ready=shown.filter(x=>x.miss===0).sort((a,b)=>a.r.m-b.r.m);
+  const almost=shown.filter(x=>x.miss>0&&x.miss<=2).sort((a,b)=>a.miss-b.miss||a.r.m-b.r.m);
+  const rest=shown.filter(x=>x.miss>2).sort((a,b)=>a.miss-b.miss);
+  const list=(arr,sec)=>arr.slice(0,limits[sec]).map(x=>recipeHTML(x.r,have,x.i)).join("")+
+    (arr.length>limits[sec]?`<button class="btn ghost showmore" data-act="more" data-sec="${sec}">Show more (${arr.length-limits[sec]} left)</button>`:"");
+  document.getElementById("rec-hint").textContent=`${RECIPES.length} recipes, matched against what you have or are running low on. Salt, pepper and oil are assumed.`;
   let html="";
-  html+=`<h2>Ready to cook<small>${ready.length}</small></h2>`+(ready.length?ready.map(x=>recipeHTML(x.r,have,x.i)).join(""):`<p class="hint">Nothing complete yet. Check the list below for close matches.</p>`);
-  if(almost.length) html+=`<h2>Missing one or two<small>${almost.length}</small></h2>`+almost.sort((a,b)=>a.miss-b.miss).map(x=>recipeHTML(x.r,have,x.i)).join("");
-  if(rest.length) html+=`<details class="more"><summary>${rest.length} more recipes need a bigger shop</summary>${rest.sort((a,b)=>a.miss-b.miss).map(x=>recipeHTML(x.r,have,x.i)).join("")}</details>`;
+  if(!shown.length){ document.getElementById("recipe-list").innerHTML=`<p class="hint">No recipes match that search.</p>`; return; }
+  html+=`<h2>Ready to cook<small>${ready.length}</small></h2>`+(ready.length?list(ready,"ready"):`<p class="hint">Nothing complete yet. Check the close matches below.</p>`);
+  if(almost.length) html+=`<h2>Missing one or two<small>${almost.length}</small></h2>`+list(almost,"almost");
+  if(rest.length) html+=`<button class="btn ghost showmore" data-act="rest" aria-expanded="${restOpen}">${restOpen?"Hide":"Show"} ${rest.length} recipes that need a bigger shop</button>`+(restOpen?list(rest,"rest"):"");
   document.getElementById("recipe-list").innerHTML=html;
-  document.getElementById("rec-badge").textContent=ready.length||"";
 }
 document.getElementById("recipe-list").addEventListener("click",e=>{
   const b=e.target.closest("button[data-act]"); if(!b) return;
+  if(b.dataset.act==="more"){ limits[b.dataset.sec]+=PAGE*2; renderRecipes(); return; }
+  if(b.dataset.act==="rest"){ restOpen=!restOpen; limits.rest=PAGE; renderRecipes(); return; }
   const idx=+b.closest(".recipe").dataset.idx;
   if(b.dataset.act==="toggle"){ open.has(idx)?open.delete(idx):open.add(idx); renderRecipes(); }
   else if(b.dataset.act==="shop"){
